@@ -33,7 +33,7 @@ The app is **self-contained** (Python and all libraries are inside): drag it to 
 | ✍️ **Handwriting** | Text drawn with single-stroke fonts (Hershey: cursive, script, gothic, marker…) or with macOS fonts. Slant, irregularity, baseline wobble and spacing make a page look hand-written. |
 | 📄 **Word and PDF** | Drop a `.docx` or `.pdf`: text, headings, lists, images and **tables** are laid out on sheets and plotted. Live handwritten preview, sheet by sheet. |
 | 🎨 **Drawings and SVG** | 30 parametric shapes and drawings (frames, stars, flowers, butterflies…), multicolour SVG import (one pen per colour), hatch fill for filled shapes. |
-| 🖼️ **Images** | Outlines, hatching or grey levels (cross-hatching) from a PNG or JPEG. |
+| 🖼️ **Images** | Outlines, detected lines (best for drawings and illustrations), hatching or grey levels (cross-hatching) from a PNG or JPEG. |
 | ✉️ **Templates and mail merge** | Envelope, card, letter, label; one sheet per row of a CSV file with `{column}` placeholders in your texts. |
 | 🧭 **Editor-style layout** | Selection, rotation, resizing, alignment, snapping to margins, zoom, undo/redo, several pens. |
 | ⏱️ **Saves time** | Stroke order is optimised (about 40 % less pen-up travel on a page of text) and the duration is estimated from the GRBL planner model. |
@@ -92,7 +92,7 @@ You need an Apple Silicon Mac, `clang` (Xcode command line tools) and an Interne
 git clone https://github.com/Wudstyz/VG-X4.git
 cd VG-X4
 ./build_app.sh      # builds "Atelier Traceuse.app" (embedded Python, SHA-256 verified)
-./make_dmg.sh       # builds dist/Atelier-Traceuse-1.0-macOS-arm64.dmg
+./make_dmg.sh       # builds dist/Atelier-Traceuse-1.1-macOS-arm64.dmg
 ```
 
 To develop without rebuilding the app:

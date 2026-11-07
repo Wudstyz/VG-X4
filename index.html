@@ -816,9 +816,12 @@ function renderInsp(){const it=sel(),box=$('#insp');
     <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
     <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
     <div class=row><label>Échelle %</label><input type=range data-k=scalepct data-t=num min=5 max=400 step=1 style="flex:1"><input type=number data-k=scalepct data-t=num style="width:64px"></div><div class=hint id=svgnotes></div>`;
-  if(it.type==='image'){h+=`${selc('mode','Mode',[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']])}
-    <div class=row><label>Seuil noir/blanc</label><input type=range data-k=threshold data-t=num min=1 max=254 step=1 style="flex:1"><input type=number data-k=threshold data-t=num style="width:64px"></div>
-    <div class=row><label></label><button class=sec id=auto>Seuil auto</button><label class=hint style="width:auto"><input type=checkbox data-k=invert data-t=chk> inverser</label></div>
+  if(it.type==='image'){if(it.p.edge===undefined)it.p.edge=4;if(it.p.focus===undefined)it.p.focus=false;
+    h+=`${selc('mode','Mode',[['contour','Contours (bords)'],['edges','Lignes du dessin (détection)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']])}
+    <div class=row data-thr><label>Seuil noir/blanc</label><input type=range data-k=threshold data-t=num min=1 max=254 step=1 style="flex:1"><input type=number data-k=threshold data-t=num style="width:64px"></div>
+    <div class=row data-thr><label></label><button class=sec id=auto>Seuil auto</button><label class=hint style="width:auto"><input type=checkbox data-k=invert data-t=chk> inverser</label></div>
+    <div class=row data-edge><label>Détails</label><input type=range data-k=edge data-t=num min=1 max=10 step=1 style="flex:1"><input type=number data-k=edge data-t=num style="width:64px"></div>
+    <div class=row data-edge><label></label><label class=hint style="width:auto"><input type=checkbox data-k=focus data-t=chk> ignorer le fond flou et le cadre</label></div>
     ${num('width','Largeur',{min:5,max:400,step:1,u:'mm'})}
     <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
     <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
@@ -858,6 +861,8 @@ function syncInsp(except){const it=sel(),box=$('#insp');if(!it||box.style.displa
   const sm=box.querySelector('#sysmode');if(sm)sm.style.display=(it.p.font||'').startsWith('sys:')?'':'none';
   box.querySelectorAll('[data-hatch]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both'||it.p.mode==='tone'||it.p.fill==='hatch')?'':'none');
   box.querySelectorAll('[data-tone]').forEach(r=>r.style.display=it.p.mode==='tone'?'':'none');
+  box.querySelectorAll('[data-edge]').forEach(r=>r.style.display=it.p.mode==='edges'?'':'none');
+  box.querySelectorAll('[data-thr]').forEach(r=>r.style.display=it.p.mode==='edges'?'none':'');
   updInfo()}
 function updInfo(){const it=sel(),box=$('#insp');
   if(it&&box.style.display!=='none'){const i=box.querySelector('#iinfo');

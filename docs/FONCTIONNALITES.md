@@ -35,6 +35,7 @@ Protocole machine (vérifié sur une VG-X4 réelle, firmware GRBL 1.1f) : 115200
 - **Jeu mécanique** : Test machine → mire (deux traits verticaux, deux horizontaux) ; la compensation enregistrée décale les consignes à chaque inversion de sens (appliquée au G-code envoyé, pas aux déplacements manuels).
 - **SVG multicolore** : à l'import, un objet et un stylo par couleur (calques parfaitement superposés).
 - **Images en tons de gris** : mode *Tons de gris*, hachures croisées de plus en plus denses.
+- **Lignes d'un dessin ou d'une illustration** : mode *Lignes du dessin (détection)*, qui repère les vrais bords au lieu de couper selon un seuil noir/blanc (réglage *Détails* de 1 à 10). La case *Ignorer le fond flou et le cadre* garde les zones nettes (le personnage) et écarte le décor flou et le liseré de l'image.
 - **Répéter en grille** (colonnes × lignes, écarts, centrage) et **publipostage** CSV (`{colonne}` dans les textes, aperçu fiche par fiche, tracé de toutes les fiches avec pause pour changer la feuille).
 - **Bibliothèque** : 30 formes et dessins paramétrables (+ les tiens : depuis la composition, depuis un SVG, ou un objet de la composition), à renommer, modifier, dupliquer, supprimer. Stockée dans `~/Library/Application Support/VG-X4/library/`.
 

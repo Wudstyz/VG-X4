@@ -33,7 +33,7 @@ L'app est **autonome** (Python et bibliothèques sont dedans) : on la glisse dan
 | ✍️ **Écriture manuscrite** | Texte tracé avec des polices à un trait (Hershey : cursive, script, gothique, feutre…) ou avec des polices du Mac. Inclinaison, irrégularité, ondulation de la ligne de base, espacement : la page ressemble à de l'écrit à la main. |
 | 📄 **Word et PDF** | Glisser un `.docx` ou un `.pdf` : le texte, les titres, les listes, les images et les **tableaux** sont mis en page sur des feuilles et tracés. Aperçu manuscrit en direct, feuille par feuille. |
 | 🎨 **Dessins et SVG** | 30 formes et dessins paramétrables (cadres, étoiles, fleurs, papillons…), import de SVG multicolores (un stylo par couleur), hachures pour remplir les formes. |
-| 🖼️ **Images** | Contours, hachures ou tons de gris (hachures croisées) à partir d'un PNG ou d'un JPEG. |
+| 🖼️ **Images** | Contours, lignes détectées (idéal pour un dessin ou une illustration), hachures ou tons de gris (hachures croisées) à partir d'un PNG ou d'un JPEG. |
 | ✉️ **Modèles et publipostage** | Enveloppe, carte, lettre, étiquette ; une feuille par ligne d'un fichier CSV avec `{colonne}` dans les textes. |
 | 🧭 **Composer comme dans un éditeur** | Sélection, rotation, taille, alignement, aimantation aux marges, zoom, annuler/rétablir, plusieurs stylos. |
 | ⏱️ **Gain de temps** | L'ordre des tracés est optimisé (jusqu'à environ 40 % de déplacements à vide en moins sur du texte) et la durée est estimée d'après le modèle de la carte GRBL. |
@@ -92,7 +92,7 @@ Il faut un Mac Apple Silicon, `clang` (outils en ligne de commande Xcode) et une
 git clone https://github.com/Wudstyz/VG-X4.git
 cd VG-X4
 ./build_app.sh      # fabrique « Atelier Traceuse.app » (Python embarqué, vérifié par SHA-256)
-./make_dmg.sh       # fabrique dist/Atelier-Traceuse-1.0-macOS-arm64.dmg
+./make_dmg.sh       # fabrique dist/Atelier-Traceuse-1.1-macOS-arm64.dmg
 ```
 
 Pour développer sans reconstruire l'app :

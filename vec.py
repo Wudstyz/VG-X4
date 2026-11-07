@@ -608,7 +608,7 @@ def otsu(gray):
 
 
 def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blob=0.5,
-                  smooth=0.6, simplify=0.05, spur=1.0, levels=4):
+                  smooth=0.6, simplify=0.05, spur=1.0, levels=4, edge=4, focus=False):
     """gray : PIL L (0 noir … 255 blanc) à ppm pixels/mm. Retourne des polylignes en mm
     (origine = coin haut-gauche de l'image)."""
     from skimage import measure
@@ -627,6 +627,8 @@ def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blo
         out += _hatch(a < threshold, ppm, hatch, angle, min_blob)
     if mode == "skeleton":
         out += _skeleton(a < threshold, ppm, spur, min_blob)
+    if mode == "edges":
+        out += _edges(a, ppm, edge, focus, spur, max(min_blob, 1.5))
     if mode == "tone":                       # hachures croisées : plus c'est sombre, plus il y a de passes
         L = int(max(2, min(5, levels)))
         lo = 25.0
@@ -635,6 +637,31 @@ def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blo
             ang = (angle + (0, 90, 45, 135, 22)[k]) % 180
             out += _hatch(a < thr, ppm, hatch, ang, min_blob)
     return out
+
+
+def _edges(a, ppm, sens, focus, spur, min_len):
+    """Détection de bords (Canny) : les lignes du dessin, indépendamment du seuil noir/blanc.
+    sens 1..10 : plus c'est haut, plus on garde de détails. focus : ignore le fond flou
+    (zones peu nettes) et le cadre de l'image."""
+    from skimage import feature, morphology, filters
+    from scipy import ndimage as ndi
+    H, W = a.shape
+    n = float(max(H, W))
+    img = a / 255.0
+    sens = max(1.0, min(10.0, float(sens)))
+    hi = 0.30 * (0.8 ** sens)
+    e = feature.canny(img, sigma=max(1.0, n * 0.0016), low_threshold=hi / 3.0, high_threshold=hi)
+    if focus:
+        sharp = ndi.gaussian_filter(filters.sobel(ndi.gaussian_filter(img, 0.8)), n * 0.014)
+        if sharp.max() > 0:
+            keep = ndi.binary_dilation(sharp / sharp.max() > 0.25, iterations=max(2, int(n * 0.007)))
+            e &= keep
+        b = int(min(H, W) * 0.03)                          # cadre / bord de l'image
+        if b > 0:
+            e[:b, :] = False; e[-b:, :] = False; e[:, :b] = False; e[:, -b:] = False
+    e = morphology.remove_small_objects(e, max_size=max(8, int(min_len * ppm)), connectivity=2)
+    e = ndi.binary_dilation(e, iterations=1)               # épaissit pour que le squelette soit propre
+    return _skeleton(e, ppm, spur, min_len)
 
 
 def _hatch(mask, ppm, spacing, angle, min_len):
@@ -743,7 +770,7 @@ def _skeleton(mask, ppm, spur_mm, min_len):
 
 
 def image_to_paths(gray, width_mm, mode="contour", threshold=128, invert=False, hatch=0.5, angle=45.0,
-                   min_blob=0.5, simplify=0.05, smooth=0.6, max_px=2600, levels=4):
+                   min_blob=0.5, simplify=0.05, smooth=0.6, max_px=2600, levels=4, edge=4, focus=False):
     """gray : image PIL 'L'. Retourne (paths centrés, w, h, info)."""
     if invert:
         gray = ImageOps.invert(gray)
@@ -755,7 +782,8 @@ def image_to_paths(gray, width_mm, mode="contour", threshold=128, invert=False, 
         ppm = min(ppm, 12.0)
     w_px = max(8, int(round(width_mm * ppm))); h_px = max(8, int(round(width_mm * ar * ppm)))
     g = gray.resize((w_px, h_px), Image.LANCZOS)
-    paths = mask_to_paths(g, w_px / width_mm, mode, threshold, hatch, angle, min_blob, smooth, simplify, levels=levels)
+    paths = mask_to_paths(g, w_px / width_mm, mode, threshold, hatch, angle, min_blob, smooth, simplify,
+                          levels=levels, edge=edge, focus=focus)
     paths = clean(paths, simplify, 0.05)
     if not paths:
         return [], 0.0, 0.0, {"ppm": round(ppm, 2)}

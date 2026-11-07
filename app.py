@@ -594,7 +594,8 @@ def route(method, path, q, body, headers):
         paths, w, h, info = vec.image_to_paths(
             u["gray"], max(2.0, float(P("width", 100))), P("mode", "contour"), int(P("threshold", 128)),
             bool(P("invert", False)), float(P("hatch", 0.5)), float(P("angle", 45)), float(P("min_blob", 0.5)),
-            float(cfg().get("simplify", 0.05)), float(P("smooth", 0.6)), levels=int(P("levels", 4)))
+            float(cfg().get("simplify", 0.05)), float(P("smooth", 0.6)), levels=int(P("levels", 4)),
+            edge=float(P("edge", 4)), focus=bool(P("focus", False)))
         return vec_response(paths, w, h, {"info": info})
     if path == "/api/gcode/build":
         groups, pens = parse_groups(P("groups", []))

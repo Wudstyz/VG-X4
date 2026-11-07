@@ -62,7 +62,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <key>CFBundleIdentifier</key><string>local.vgx4</string>
 <key>CFBundleIconFile</key><string>icon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.0</string>
+<key>CFBundleShortVersionString</key><string>1.1</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>LSMinimumSystemVersion</key><string>$MINOS</string>
 </dict></plist>

@@ -1,0 +1,25 @@
+# Build outputs (the .dmg is published as a GitHub Release, not committed)
+Atelier Traceuse.app/
+VG-X4.app/
+dist/
+launcher
+launcher.dSYM/
+icon.iconset/
+*.dmg
+*.zip
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+.AppleDouble
+._*
+
+# User data written by the app lives in ~/Library/Application Support/VG-X4 (never in the repo)
+*.vg4
+autosave.vg4
+
+icon_preview.png

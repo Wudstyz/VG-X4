@@ -1,0 +1,12 @@
+pywebview
+pyserial
+pillow
+numpy
+fonttools
+scikit-image
+Hershey-Fonts
+svgelements
+pyobjc-framework-Cocoa
+python-docx
+pypdf
+pdfplumber

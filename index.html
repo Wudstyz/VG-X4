@@ -1,0 +1,1483 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><title>Atelier Traceuse</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{color-scheme:light;--bg:#efe9da;--card:#fffdf7;--fg:#16193b;--mut:#6b6d86;--line:#ddd5c0;--ac:#1d3fc4;--ac2:#e8531f;--ink:#1a2f9a;
+--ok:#1e8f57;--warn:#c47800;--err:#cf1f3a;--cv:#e4dcc8;--sheet:#fffefa;--grid:#e6ebf7;--grid2:#c8d4f0;
+--mast1:#16226b;--mast2:#0b1442;--mastfg:#f4f0e3;--gl:rgba(29,63,196,.06);--shadow:rgba(40,35,90,.22);--tabtop:#e8531f;
+--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+--ui:"Avenir Next","Avenir","Gill Sans","Helvetica Neue",sans-serif;--display:"Iowan Old Style","Palatino Linotype",Palatino,"Hoefler Text",Georgia,serif;--mono:"SF Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+html,body{height:100%}
+::selection{background:var(--ac2);color:#fff}
+body{margin:0;font:14px/1.4 var(--ui);background:var(--bg);color:var(--fg);display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select,input,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:11px;height:11px}::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--mut) 38%,transparent);border-radius:9px;border:3px solid transparent;background-clip:padding-box}::-webkit-scrollbar-track{background:transparent}
+
+/* boutons */
+button{background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 86%,#fff),var(--ac));color:#fff;border:0;border-radius:10px;padding:7px 14px;cursor:pointer;white-space:nowrap;font-weight:600;letter-spacing:.01em;
+  box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 3px 8px -3px color-mix(in srgb,var(--ac) 70%,transparent);transition:transform .12s,box-shadow .12s,filter .12s,background .12s}
+button:hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 12px -4px color-mix(in srgb,var(--ac) 75%,transparent)}
+button:active{transform:translateY(0);filter:brightness(.97)}
+button:disabled{opacity:.4;cursor:default;filter:none;transform:none;box-shadow:none}
+button.sec{background:var(--card);color:var(--fg);border:1px solid var(--line);font-weight:500;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 1px 2px var(--shadow)}
+button.sec:hover{border-color:var(--ac);box-shadow:0 4px 10px -5px var(--shadow)}
+button.ghost{background:none;color:var(--mut);padding:4px 8px;box-shadow:none;font-weight:500}
+button.ghost:hover{color:var(--fg);box-shadow:none}
+button.red{background:linear-gradient(180deg,#f2566d,var(--err))}
+button.orange{background:linear-gradient(180deg,#f0a63a,var(--warn))}
+button.green{background:linear-gradient(180deg,#f46f3b,var(--ac2) 45%,#d63e12);font-weight:700;letter-spacing:.03em;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 4px 12px -3px color-mix(in srgb,var(--ac2) 80%,transparent)}
+input,select,textarea{background:color-mix(in srgb,var(--card) 78%,var(--bg));border:1px solid var(--line);border-radius:9px;padding:5px 9px;min-width:0;transition:border-color .12s,box-shadow .12s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 22%,transparent)}
+input[type=number]{width:90px;font-family:var(--mono);font-size:13px}input[type=range]{padding:0;accent-color:var(--ac2);box-shadow:none;background:none}
+input[type=checkbox]{accent-color:var(--ac);width:16px;height:16px;padding:0}
+input[type=search]{border-radius:99px;padding-left:14px}
+textarea{width:100%;resize:vertical}
+
+/* bandeau (en-tête + onglets) */
+header{display:flex;align-items:center;gap:8px;padding:10px 18px 9px;color:var(--mastfg);flex-wrap:wrap;position:relative;z-index:3;
+  background:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px) 0 0/100% 16px,linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/16px 100%,linear-gradient(180deg,var(--mast1),var(--mast2));animation:drop .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes drop{from{transform:translateY(-14px);opacity:0}}
+.brand{display:inline-flex;align-items:center;gap:11px;font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:.2px;line-height:1;margin-right:4px}
+.brand i{font-style:italic;font-weight:500;color:#ff9a6c}
+.logo{width:33px;height:33px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));transition:transform .4s cubic-bezier(.3,1.6,.5,1)}.brand:hover .logo{transform:rotate(-8deg) scale(1.06)}
+header button.sec,header button.ghost{background:rgba(255,255,255,.09);color:var(--mastfg);border:1px solid rgba(255,255,255,.2);box-shadow:none}
+header button.sec:hover,header button.ghost:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:#fff}
+header #bconn{background:linear-gradient(180deg,#fffaf0,#efe6cf);color:#16226b;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+header select{background:rgba(255,255,255,.09);color:var(--mastfg);border:1px solid rgba(255,255,255,.2)}header select option{color:#16193b;background:#fff}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:4px 12px;border-radius:99px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);font-size:13px;color:var(--mastfg)}
+.dot{width:9px;height:9px;border-radius:50%;background:#9aa3d0;box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.dot.ok{background:#3ddc97;box-shadow:0 0 0 3px rgba(61,220,151,.2),0 0 10px #3ddc97}.dot.run{background:#ffb020;animation:p 1s infinite;box-shadow:0 0 10px #ffb020}.dot.err{background:#ff5a73;box-shadow:0 0 10px #ff5a73}
+@keyframes p{50%{opacity:.35}}
+.sp{flex:1}
+.pos{font:13px var(--mono);color:var(--mut)}.pos b{color:var(--fg);font-weight:600}
+header .pos{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:4px 9px;color:#a9bbf0;font-size:12.5px}header .pos b{color:#fff}
+#jobbar{display:none;padding:8px 20px;background:var(--card);border-bottom:1px solid var(--line);font-size:13px;gap:14px;align-items:center;position:relative;z-index:2;box-shadow:0 6px 14px -10px var(--shadow)}
+#jobbar.on{display:flex}
+.bar{flex:1;height:10px;background:color-mix(in srgb,var(--line) 70%,transparent);border-radius:6px;overflow:hidden;box-shadow:inset 0 1px 2px var(--shadow)}
+.bar i{display:block;height:100%;width:0;border-radius:6px;transition:width .25s;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+#jobbar.on .bar i{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 9px,transparent 9px 18px),linear-gradient(90deg,var(--ac),var(--ac2));background-size:26px 26px,100% 100%;animation:stripes 1s linear infinite}
+@keyframes stripes{to{background-position:26px 0,0 0}}
+#banner{display:none;padding:9px 20px;font-size:13px;background:linear-gradient(90deg,#fff1c7,#ffe8a8);color:#5a4200;border-bottom:1px solid #ecce7a;gap:12px;align-items:center;position:relative;z-index:2}
+#banner.on{display:flex}
+nav{display:flex;gap:4px;padding:7px 20px 0;background:linear-gradient(180deg,var(--mast2),color-mix(in srgb,var(--mast2) 78%,#000));position:relative;z-index:2;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+nav button{background:none;color:rgba(244,240,227,.72);border-radius:13px 13px 0 0;padding:9px 18px 10px;font-weight:600;font-size:13.5px;box-shadow:none;letter-spacing:.015em;position:relative;transition:background .15s,color .15s}
+nav button:hover{background:rgba(255,255,255,.1);color:#fff;transform:none;filter:none;box-shadow:none}
+nav button.on{background:var(--bg);color:var(--fg);box-shadow:inset 0 3px 0 var(--tabtop);padding-top:10px}
+main{flex:1;min-height:0;position:relative;background:var(--grain),linear-gradient(var(--gl) 1px,transparent 1px) 0 0/28px 28px,linear-gradient(90deg,var(--gl) 1px,transparent 1px) 0 0/28px 28px,var(--bg)}
+section{position:absolute;inset:0;display:none;padding:14px 18px;gap:14px}
+section.on{display:flex}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* cartes = feuilles de papier */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 10px 24px -14px var(--shadow),0 1px 3px var(--shadow)}
+.card h3{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ac);font-weight:800;display:flex;align-items:center;gap:9px}
+.card h3::before{content:"";width:7px;height:7px;background:var(--ac2);transform:rotate(45deg);border-radius:1px;flex:none}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}
+.row>label{width:112px;color:var(--mut);font-size:13px;flex:none}
+.row.w>label{width:auto}
+.hint{color:var(--mut);font-size:12px;line-height:1.4}
+code{font-family:var(--mono);font-size:11.5px;background:color-mix(in srgb,var(--ac) 8%,transparent);padding:1px 5px;border-radius:5px}
+.stage{flex:1;min-height:200px;position:relative;background:var(--cv);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:inset 0 0 50px -10px var(--shadow),0 12px 28px -16px var(--shadow)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#side{width:344px;flex:none;overflow:auto;padding-right:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.items{display:flex;flex-direction:column;gap:4px;max-height:176px;overflow:auto}
+.it{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:background .12s}
+.it:hover{background:color-mix(in srgb,var(--ac) 6%,transparent)}.it.sel{background:color-mix(in srgb,var(--ac) 11%,var(--card));border-color:color-mix(in srgb,var(--ac) 45%,transparent);box-shadow:inset 3px 0 0 var(--ac2)}
+.it .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.it .ty{color:var(--mut);font-size:10.5px;width:38px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.it.out .nm{color:var(--err)}
+.chips{display:flex;gap:5px;flex-wrap:wrap}.chip{padding:4px 11px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;font-size:13px;transition:all .12s;font-family:var(--mono);font-size:12.5px}
+.chip:hover{border-color:var(--ac)}.chip.on{background:var(--ac);color:#fff;border-color:var(--ac);box-shadow:0 3px 8px -3px color-mix(in srgb,var(--ac) 80%,transparent)}
+.jog{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);gap:7px}
+.jog button{font-size:21px;padding:0;border-radius:15px;background:linear-gradient(180deg,var(--card),color-mix(in srgb,var(--card) 80%,var(--bg)));color:var(--ac);border:1px solid var(--line);box-shadow:0 4px 0 var(--line),0 8px 14px -8px var(--shadow);transition:transform .08s,box-shadow .08s}
+.jog button:hover{border-color:var(--ac);transform:translateY(-1px)}.jog button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.jog .c{color:var(--ac2);font-size:11px;font-family:var(--mono);font-weight:800;border-color:color-mix(in srgb,var(--ac2) 55%,var(--line))}
+#log{font:12px/1.5 var(--mono);background:var(--cv);border:1px solid var(--line);border-radius:12px;height:200px;overflow:auto;padding:8px 10px;white-space:pre-wrap;box-shadow:inset 0 2px 8px -4px var(--shadow)}
+#log .tx{color:var(--ink)}#log .err{color:var(--err)}#log .warn{color:var(--warn)}#log .info{color:var(--ok)}#log .rx{color:var(--mut)}
+#toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:9px;z-index:80;max-width:430px}
+.toast{background:var(--mast1);color:var(--mastfg);padding:11px 16px 11px 14px;border-radius:12px;border-left:4px solid var(--ac2);font-size:13px;box-shadow:0 14px 30px -10px rgba(0,0,20,.55);animation:in .28s cubic-bezier(.2,.9,.3,1.2)}
+.toast.err{background:var(--err);color:#fff;border-left-color:#fff}
+@keyframes in{from{opacity:0;transform:translateY(12px) scale(.97)}}
+#modal{position:fixed;inset:0;background:rgba(8,12,44,.5);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;z-index:90}
+#modal.on{display:flex}
+#modal .box{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 26px;width:min(480px,92vw);box-shadow:0 30px 70px -20px rgba(0,0,30,.6);animation:pop .28s cubic-bezier(.2,.9,.3,1.15)}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.96)}}
+#modal h2{margin:0 0 12px;font:600 24px/1.15 var(--display)}#modal .btns{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+.drop{border:2px dashed color-mix(in srgb,var(--ac) 35%,var(--line));border-radius:16px;padding:26px;text-align:center;color:var(--mut);cursor:pointer;transition:all .15s}
+.drop:hover{border-color:var(--ac);color:var(--fg)}.drop.over{border-color:var(--ac2);background:color-mix(in srgb,var(--ac2) 8%,var(--card))}
+#gtext{font:12px/1.55 var(--mono);height:100%;min-height:120px;resize:none;white-space:pre}
+.warnl{color:var(--warn);font-size:13px}.warnl.bad{color:var(--err)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.fullh{height:100%}
+.libcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:0 8px 18px -14px var(--shadow);transition:transform .18s cubic-bezier(.2,.8,.3,1.2),box-shadow .18s,border-color .15s}
+.libcard:hover{border-color:var(--ac);transform:translateY(-3px) rotate(-.4deg);box-shadow:0 18px 30px -16px var(--shadow)}
+.libcard .lt{height:116px;color:var(--fg);display:flex;align-items:center;justify-content:center;background:linear-gradient(var(--gl) 1px,transparent 1px) 0 0/14px 14px,linear-gradient(90deg,var(--gl) 1px,transparent 1px) 0 0/14px 14px,var(--sheet);border-radius:11px;border:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.libcard .lt svg{width:100%;height:100%;padding:6px}
+.libcard .ln{display:flex;flex-direction:column;min-width:0}.libcard .ln b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--display);font-size:15px;font-weight:600}
+.libcard .la{display:flex;gap:6px;flex-wrap:wrap}.libcard .la button{padding:4px 10px;font-size:12px;border-radius:8px}
+.ib{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;flex:none;position:relative}
+.ib svg{width:18px;height:18px;display:block;pointer-events:none}
+label.ib{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 1px 2px var(--shadow);transition:border-color .12s,background .12s}
+label.ib:hover{border-color:var(--ac)}
+label.ib select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:14px}
+label.ib input{position:absolute;opacity:0;width:100%;height:100%;inset:0;margin:0;cursor:pointer}
+label.ib.tog:has(input:checked){background:color-mix(in srgb,var(--ac) 16%,var(--card));color:var(--ac);border-color:var(--ac)}
+#s-compose>.col>.tools{gap:6px}
+.vsep{width:1px;height:22px;background:var(--line);margin:0 3px}
+.it .pd{width:11px;height:11px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.25);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.wiz{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:9px 0;background:color-mix(in srgb,var(--bg) 55%,var(--card))}
+.wiz.cur{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 16%,transparent)}.wiz.done{opacity:.7}
+.ans{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.ans button{background:var(--card);color:var(--fg);border:1px solid var(--line);font-weight:500;box-shadow:none}
+.ans button:hover{border-color:var(--ac)}.ans button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.diag{padding:12px 14px;border-radius:14px;margin-top:10px;font-size:13px;line-height:1.5}
+.diag.ok{background:color-mix(in srgb,var(--ok) 14%,var(--card));border:1px solid var(--ok)}
+.diag.bad{background:color-mix(in srgb,var(--err) 12%,var(--card));border:1px solid var(--err)}
+.diag.warn{background:color-mix(in srgb,var(--warn) 14%,var(--card));border:1px solid var(--warn)}
+.pens{display:grid;grid-template-columns:auto 1fr auto;gap:7px 9px;align-items:center}
+.pens input[type=color]{width:40px;height:30px;padding:2px;border-radius:9px;cursor:pointer}
+table.cal{border-collapse:collapse;font-size:13px;margin-top:6px}table.cal td,table.cal th{padding:5px 10px;border-bottom:1px solid var(--line);text-align:left}table.cal th{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut)}
+.kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--mut);background:var(--card)}
+.zoomctl{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:1px;align-items:center;background:color-mix(in srgb,var(--card) 90%,transparent);border:1px solid var(--line);border-radius:12px;padding:3px;box-shadow:0 8px 20px -10px var(--shadow);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:2}
+.zoomctl button,.tpop button{background:transparent;color:var(--mut);border:0;border-radius:9px;min-width:26px;width:26px;height:26px;padding:0;display:grid;place-items:center;font:600 17px/1 var(--mono);box-shadow:none;filter:none;transform:none}
+.zoomctl button.zl{font-size:9.5px;letter-spacing:-.04em;font-weight:700}
+.zoomctl button[data-a=in]{order:1}.zoomctl button.zl{order:2}.zoomctl button[data-a=out]{order:3}.zoomctl button[data-a=sel]{order:4}
+.zoomctl button:hover:not(:disabled),.tpop button:hover{color:var(--fg);background:color-mix(in srgb,var(--ac) 14%,transparent);transform:none;filter:none;box-shadow:none}
+.zoomctl button:disabled{opacity:.3}
+/* barre d’outils du Composer : un seul rail sur le bord droit, de haut en bas ; le zoom en fait partie, en bas */
+.zoomctl.tbar{bottom:10px;opacity:.85;transition:opacity .15s;flex-wrap:wrap;align-content:flex-start;justify-content:flex-start}   /* fenêtre basse : le rail passe sur deux colonnes */
+.zoomctl.tbar:hover,.zoomctl.tbar:focus-within{opacity:1}
+.zoomctl.tbar button.on,.zoomctl.tbar button.on:hover:not(:disabled){background:color-mix(in srgb,var(--ac) 18%,transparent);color:var(--ac)}
+.tbar svg{display:block;width:16px;height:16px;pointer-events:none}
+.tbar .tsep{width:16px;height:1px;background:var(--line);margin:4px 0;flex:none}
+.tbar .zoomctl{position:static;margin-top:auto;padding:0;border:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;opacity:1;overflow:visible}
+.tbar .zoomctl::before{content:"";display:block;width:16px;height:1px;background:var(--line);margin:4px auto;order:0}
+.tbar>*{flex:none}
+.tpop{position:absolute;display:none;grid-template-columns:repeat(3,26px);gap:2px;padding:4px;background:color-mix(in srgb,var(--card) 96%,transparent);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 24px -10px var(--shadow);z-index:3}
+.tpop.on{display:grid}
+.stage[data-tool=hand] canvas{cursor:grab}.stage[data-tool=hand].grab canvas{cursor:grabbing}.stage[data-tool=marquee] canvas{cursor:crosshair}
+.stage.panning canvas{cursor:grab}.stage.panning.grab canvas{cursor:grabbing}
+#mergebar,#docbar{box-shadow:0 8px 20px -12px var(--shadow)}
+#modal .box.wide{width:min(980px,95vw)}
+#docdlg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:22px;align-items:start}
+#docdlg .chk{display:flex;gap:8px;align-items:center;margin:7px 0;font-size:13.5px;cursor:pointer}
+#docdlg .pv{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+#docdlg canvas{width:100%;display:block;background:#fff;border-radius:3px;box-shadow:0 10px 24px -12px var(--shadow),0 0 0 1px var(--line)}
+#docdlg .nav{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px}
+@media (max-width:760px){#docdlg{grid-template-columns:1fr}}
+#cvinfo{padding:0 4px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* apparition en cascade à chaque changement d'onglet */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+section.on>.col>.card,section.on>.card,section.on>.col>.tools,section.on>.col>.stage{animation:rise .55s cubic-bezier(.2,.75,.2,1) both}
+section.on>.col>.card:nth-child(2),section.on>.col>.stage{animation-delay:.06s}
+section.on>.col>.card:nth-child(3){animation-delay:.12s}section.on>.col>.card:nth-child(4){animation-delay:.18s}section.on>.col>.card:nth-child(5){animation-delay:.24s}
+section.on>.col:nth-child(2)>.card{animation-delay:.08s}section.on>.col:nth-child(3)>.card{animation-delay:.14s}
+.libcard{animation:rise .5s cubic-bezier(.2,.75,.2,1) both}
+</style>
+
+<header>
+  <span class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3f68f0"/><stop offset="1" stop-color="#14205a"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#lg)"/><g transform="rotate(-6 20 20)"><rect x="7.5" y="7" width="22" height="26" rx="2.5" fill="#fffdf7"/><path d="M11 25c1.6-4.2 5.2-4.2 5.7-1.1s-1.1 3.6-2.1 2 .6-5.3 4.2-4.7 4.2 3.1 6.8 2.1" fill="none" stroke="#1d3fc4" stroke-width="1.9" stroke-linecap="round"/><circle cx="10.3" cy="10.3" r="1.5" fill="#e8531f"/></g><path d="M32 8.5 23 22" stroke="#ff7a45" stroke-width="4.4" stroke-linecap="round"/><path d="M23 22l-1.6 2.6" stroke="#1d2036" stroke-width="2.6" stroke-linecap="round"/></svg><span>Atelier <i>Traceuse</i></span></span>
+  <span class="pill"><span class="dot" id="dot"></span><span id="stxt">Déconnecté</span></span>
+  <select id="port" title="Port série" style="max-width:190px"></select>
+  <button class="ghost" id="refresh" title="Actualiser les ports">⟳</button>
+  <button id="bconn">Connecter</button>
+  <button class="sec" id="bsim" title="Simuler une machine, sans rien brancher">Simulation</button>
+  <span class="sp"></span>
+  <span class="pos" id="hpos"></span>
+  <button class="orange" id="bpause" style="display:none">⏸ Pause</button>
+  <button class="red" id="bstop" style="display:none">■ Arrêt</button>
+</header>
+<div id="jobbar"><span id="jtxt"></span><div class="bar"><i id="jbar"></i></div><span id="jeta" class="hint"></span></div>
+<div id="banner"><span id="btxt" style="flex:1"></span><button class="sec" id="bunlock" style="display:none">Débloquer ($X)</button>
+  <button id="bcont" style="display:none">▶ Continuer</button>
+  <button id="bresume" style="display:none">↻ Reprendre…</button><button class="sec" id="bforget" style="display:none">Abandonner</button></div>
+<nav id="tabs">
+  <button data-t="compose" class="on">Composer</button><button data-t="control">Contrôle</button>
+  <button data-t="gcode">G-code</button><button data-t="lib">Bibliothèque</button><button data-t="journal">Journal</button><button data-t="test">Test machine</button><button data-t="settings">Réglages</button>
+</nav>
+
+<main>
+<!-- ───────── Composer ───────── -->
+<section id="s-compose" class="on">
+  <div class="col" style="flex:1;min-width:0">
+    <div class="tools">
+      <button class="ib" id="addText" title="Ajouter du texte" aria-label="Ajouter du texte"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5V3.5h12V5M9 3.5v11M6.8 14.5h4.4"/></svg></button><button class="ib" id="addSvg" title="Ajouter un dessin SVG" aria-label="Ajouter un dessin SVG"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13.5C3.5 6 9 4.5 14 7"/><circle cx="3.2" cy="13.8" r="1.5"/><circle cx="14.3" cy="7.1" r="1.5"/><path d="M5 11.5L7.2 9.6M12.5 5.8L11 7.2" opacity=".0"/></svg></button><button class="ib" id="addImg" title="Ajouter une image" aria-label="Ajouter une image"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="3.2" width="13.6" height="11.6" rx="1.6"/><circle cx="6.3" cy="7.3" r="1.2"/><path d="M2.6 13l4-4 3 3 2.2-2.2 3.6 3.4"/></svg></button><button class="ib" id="addDoc" title="Ajouter un document Word (.docx) ou PDF : le texte est écrit, les images sont dessinées" aria-label="Ajouter un document Word (.docx) ou PDF : le texte est écrit, les images sont dessinées"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2h5.8l3.7 3.7v9.6a.7.7 0 0 1-.7.7H4.5a.7.7 0 0 1-.7-.7V2.7a.7.7 0 0 1 .7-.7z"/><path d="M10.3 2v3.7H14M6.3 9h5.4M6.3 11.7h5.4"/></svg></button>
+      <label class="ib" title="Modèles de mise en page (enveloppe, carte, lettre, étiquette)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="13" height="13" rx="1.6"/><path d="M2.5 7h13M8 7v8.5"/></svg><select id="tpl" aria-label="Modèles de mise en page"><option value="">Modèle…</option><option value="enveloppe">Enveloppe DL</option><option value="voeux">Carte (A6)</option><option value="lettre">Lettre A4</option><option value="etiquette">Étiquette</option></select></label>
+      <span class="vsep"></span>
+      <button class="ib sec" id="bundo" title="Annuler (⌘Z)" aria-label="Annuler (⌘Z)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7.5h5.8a3.4 3.4 0 0 1 0 6.8H7.5M5.5 7.5L8 5M5.5 7.5L8 10"/></svg></button><button class="ib sec" id="bredo" title="Rétablir (⇧⌘Z)" aria-label="Rétablir (⇧⌘Z)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g transform="matrix(-1 0 0 1 18 0)"><path d="M5.5 7.5h5.8a3.4 3.4 0 0 1 0 6.8H7.5M5.5 7.5L8 5M5.5 7.5L8 10"/></g></svg></button>
+      <span class="vsep"></span>
+      <button class="ib sec" id="pmerge" title="Publipostage : une feuille par ligne d'un fichier CSV" aria-label="Publipostage : une feuille par ligne d'un fichier CSV"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="1.6"/><path d="M2.6 5.2L9 10l6.4-4.8"/></svg></button>
+      <span class="vsep"></span>
+      <button class="ib sec" id="popen" title="Ouvrir une composition (.vg4)" aria-label="Ouvrir une composition (.vg4)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.2a1 1 0 0 1 1-1h3.6l1.5 1.8H15a1 1 0 0 1 1 1v6.2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></svg></button><button class="ib sec" id="psave" title="Enregistrer" aria-label="Enregistrer"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 3h9l2.8 2.8v8.7a.7.7 0 0 1-.7.7H3.2a.7.7 0 0 1-.7-.7V3.7a.7.7 0 0 1 .7-.7z"/><path d="M5.8 3v3.4h5.2V3M5.8 15v-4.6h6.4V15"/></svg></button><button class="ib sec" id="psaveas" title="Enregistrer sous…" aria-label="Enregistrer sous…"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3H3.7a.7.7 0 0 0-.7.7v10.6a.7.7 0 0 0 .7.7H8.5"/><path d="M5.5 3v3.4h4.2V3M5.5 15v-4.4h3"/><path d="M13.5 9.5v5.5M10.8 12.2h5.4"/></svg></button><button class="ib sec" id="plast" title="Rouvrir la composition sauvegardée automatiquement" aria-label="Rouvrir la composition sauvegardée automatiquement"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a6 6 0 1 0 1.9-4.4"/><path d="M3 3v3.2h3.2M9 5.8V9l2.4 1.6"/></svg></button>
+      <span class="hint" id="pname"></span>
+      <span class="sp"></span>
+      <button class="ib sec" id="bclrtrail" title="Efface le tracé orange affiché (ce qui a été dessiné)" aria-label="Efface le tracé orange affiché (ce qui a été dessiné)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 11.3l6-6.1a1.2 1.2 0 0 1 1.7 0l3 3a1.2 1.2 0 0 1 0 1.7L9.6 14.3H6z"/><path d="M6.2 8.3l4.5 4.5M9.6 14.3h6"/></svg></button><button class="ib sec" id="bnewsheet" title="Nouvelle feuille : efface le tracé et la composition" aria-label="Nouvelle feuille : efface le tracé et la composition"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2h5.8l3.7 3.7v9.6a.7.7 0 0 1-.7.7H4.5a.7.7 0 0 1-.7-.7V2.7a.7.7 0 0 1 .7-.7z"/><path d="M10.3 2v3.7H14M9 8.6v4.6M6.7 10.9h4.6"/></svg></button>
+    </div>
+    <div class="tools">
+      <span class="hint">Papier</span><select id="cpaper" style="max-width:190px"></select>
+      <button class="ib sec" id="crot" title="Pivoter le papier (paysage ⇄ portrait)" aria-label="Pivoter le papier (paysage ⇄ portrait)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7.6" width="9" height="6.6" rx="1"/><path d="M7.5 3.5h3.2a4 4 0 0 1 4 4V9M12.7 7l2 2.2 2-2.2"/></svg></button>
+      <span class="hint">Marge</span><input type="number" id="cmargin" min="0" max="100" step="1" style="width:58px"><span class="hint">mm</span>
+      <label class="ib tog" title="Aimanter aux marges, au centre et aux autres objets (⌥ = désactivé pendant un déplacement)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v6a5 5 0 0 0 10 0V3h-3.2v6a1.8 1.8 0 0 1-3.6 0V3z"/><path d="M4 5.6h3.2M10.8 5.6H14"/></svg><input type="checkbox" id="csnap" aria-label="Aimanter"></label>
+      <button class="ib sec" id="callctr" title="Centre toute la composition sur le papier" aria-label="Centre toute la composition sur le papier"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="13" height="13" rx="1.6"/><circle cx="9" cy="9" r="2"/><path d="M9 5.4v1.6M9 11v1.6M5.4 9H7M11 9h1.6"/></svg></button>
+      <span class="sp"></span>
+      <span class="hint" id="sumtxt"></span>
+      <button class="ib sec" id="bpreview" title="Voir le G-code" aria-label="Voir le G-code"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 5L3 9l3.5 4M11.5 5L15 9l-3.5 4M10.2 3.5L7.8 14.5"/></svg></button><button class="ib sec" id="bframe" title="Cadre : le stylo levé fait le tour du rectangle qui entoure le dessin" aria-label="Cadre : le stylo levé fait le tour du rectangle qui entoure le dessin"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.3" y="6" width="10.7" height="9.5" rx="1"/><path d="M9.8 8.6l5.4-5.4 1.5 1.5-5.4 5.4-2.1.6z"/></svg></button><button class="ib sec" id="bdry" title="Essai à blanc : fait tout le trajet, stylo levé" aria-label="Essai à blanc : fait tout le trajet, stylo levé"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 13.5c3-8 6 2 8.2-4.2 1.2-3.4 2.8-3.2 4.8-3.6" stroke-dasharray="2 2.2"/><circle cx="15.5" cy="5.6" r="1.4"/></svg></button>
+      <button class="green" id="brun" title="Tracer la composition" style="display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 16px 0 12px"><span style="display:grid;width:16px;height:16px"><svg viewBox="0 0 18 18" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.2v11.6L15 9z"/></svg></span>Tracer</button>
+    </div>
+    <div class="tools" id="mergebar" style="display:none;background:var(--card);border:1px solid var(--ac);border-radius:10px;padding:6px 10px">
+      <b>Publipostage</b> — fiche <button class="sec" id="mprev">◀</button><b id="mnum"></b><button class="sec" id="mnext">▶</button>
+      <span class="hint" id="mcols" style="flex:1"></span>
+      <button class="green" id="mall">▶ Tracer toutes les fiches</button><button class="sec" id="mquit">Quitter</button>
+    </div>
+    <div class="tools" id="docbar" style="display:none;background:var(--card);border:1px solid var(--ac);border-radius:10px;padding:6px 10px">
+      <b>Document</b> <span class="hint" id="dname" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span> — feuille <button class="sec" id="dprevb">◀</button><b id="dnum"></b><button class="sec" id="dnextb">▶</button>
+      <span class="hint" id="dinfo" style="flex:1" title="Changer de feuille remplace les objets du document par ceux de la feuille choisie : tes déplacements sur cette feuille seraient perdus."></span>
+      <button class="sec" id="dset">Réglages…</button><button class="green" id="dall">▶ Tracer toutes les feuilles</button><button class="sec" id="dquit">Quitter</button>
+    </div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas></div>
+    <div class="hint" id="cvinfo">Glisse un fichier Word / PDF / SVG / image / G-code / composition (.vg4) ici. Clique un objet pour le sélectionner, déplace-le (⌥ = sans aimant), poignée ◢ = taille, ● = rotation (Maj = pas de 15°). Maj + clic = plusieurs objets ; la barre d’icônes sur le bord droit de la feuille donne le cadre de sélection, la rotation, la taille et l’alignement.</div>
+  </div>
+  <div class="col" id="side">
+    <div class="card"><h3>Objets</h3><div class="items" id="items"></div><div class="hint" id="noitems">Aucun objet. Ajoute un texte, un SVG ou une image.</div></div>
+    <div class="card" id="insp" style="display:none"></div>
+  </div>
+</section>
+
+<!-- ───────── Contrôle ───────── -->
+<section id="s-control" style="overflow:auto">
+  <div class="col" style="width:330px;flex:none">
+    <div class="card"><h3>Déplacement</h3>
+      <div style="display:flex;gap:18px;align-items:center">
+        <div class="jog">
+          <span></span><button data-j="0,-1">▲</button><span></span>
+          <button data-j="-1,0">◀</button><button class="c" id="jcenter" title="Aller au zéro">0,0</button><button data-j="1,0">▶</button>
+          <span></span><button data-j="0,1">▼</button><span></span>
+        </div>
+        <div><div class="hint" style="margin-bottom:4px">Pas (mm)</div><div class="chips" id="steps"></div>
+        <div class="hint" style="margin-top:8px">Flèches du clavier ; <span class="kbd">⇧</span> = ×10.</div></div>
+      </div>
+      <div class="row" style="margin-top:12px"><label>Aller à X / Y</label><input type="number" id="gx" value="0" step="1"><input type="number" id="gy" value="0" step="1"><button class="sec" id="bgoto">Aller</button></div>
+    </div>
+    <div class="card"><h3>Point zéro</h3>
+      <div class="hint" style="margin-bottom:8px">Place le stylo sur le coin <b>haut-gauche</b> du papier, puis définis le zéro (G92 X0 Y0). Tous les tracés partent de là.</div>
+      <div class="tools"><button id="bzero">Définir le zéro ici</button><button class="sec" id="bhome">Retour au zéro</button></div>
+      <div class="hint" id="zeroinfo" style="margin-top:6px"></div>
+    </div>
+    <div class="card"><h3>Alignement du papier</h3>
+      <div class="hint" style="margin-bottom:8px">Stylo levé, la machine fait des va-et-vient le long d'un bord du papier, depuis le zéro : tu vois si le papier est bien droit. <b>Arrêt</b> pour interrompre.</div>
+      <div class="row"><label>Longueur</label><input type="number" id="alLen" min="10" step="10" placeholder="= papier" style="width:100px"><span class="hint">mm (vide = taille du papier)</span></div>
+      <div class="row"><label>Vitesse</label><input type="number" id="alFeed" value="1500" min="100" max="5000" step="100"><span class="hint">mm/min</span></div>
+      <div class="row"><label>Allers-retours</label><input type="number" id="alN" value="5" min="1" max="50"></div>
+      <div class="tools"><button id="alX">↔ Bord haut (axe X)</button><button class="sec" id="alY">↕ Bord gauche (axe Y)</button></div>
+    </div>
+  </div>
+  <div class="col" style="width:330px;flex:none">
+    <div class="card"><h3>Stylo</h3>
+      <div class="tools"><button class="sec" id="bpup">Stylo ▲ levé</button><button class="sec" id="bpdn">Stylo ▼ baissé</button></div>
+      <div class="row" style="margin-top:10px"><label>Valeur S</label><input type="range" id="srange" min="0" max="1000" step="5" style="flex:1"><input type="number" id="snum" min="0" max="1000" step="5"></div>
+      <div class="tools"><button class="sec" id="bstest">Tester cette valeur</button><button class="sec" id="bssave">Enregistrer (stylo baissé)</button></div>
+      <div class="hint" style="margin-top:6px">Valeur actuelle du stylo baissé : <b id="scur"></b> (M3 S… = baissé, M5 = levé).</div>
+    </div>
+    <div class="card"><h3>Zone utilisable (butées)</h3>
+      <div class="hint" style="margin-bottom:6px">La machine n'a pas de fins de course. Mesure la course réelle depuis le zéro : va avec les flèches jusqu'à ~2 mm de la butée <b>droite</b>, clique ; puis de la butée <b>basse</b>. L'app refusera ensuite les tracés qui dépassent.</div>
+      <div class="tools"><button class="sec" id="limX">Enregistrer la butée droite (X)</button><button class="sec" id="limY">Enregistrer la butée basse (Y)</button><button class="sec" id="limClr">Effacer</button></div>
+      <div class="hint" id="limInfo" style="margin-top:6px"></div>
+    </div>
+    <div class="card"><h3>Machine</h3>
+      <div class="tools"><button class="sec" id="bunlock2">Débloquer ($X)</button><button class="sec" id="breset">Réinitialiser (Ctrl-X)</button><button class="sec" id="bsettings">Lire $$</button><button class="sec" id="bbackup" title="Enregistre les réglages $ de la carte dans un fichier">Sauvegarder $$</button></div>
+      <div class="hint" style="margin-top:8px">Position travail : <span class="pos" id="cpos"></span><br>Position machine : <span class="pos" id="mpos"></span></div>
+    </div>
+  </div>
+  <div class="col" style="flex:1;min-width:300px">
+    <div class="card" style="flex:1;display:flex;flex-direction:column"><h3>Console</h3>
+      <div id="log" style="flex:1"></div>
+      <div class="row"><input id="cmd" placeholder="Commande G-code (ex. G1 X10 Y10 F1000)" style="flex:1"><button class="sec" id="bsend">Envoyer</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── G-code ───────── -->
+<section id="s-gcode">
+  <div class="col" style="width:46%;min-width:340px">
+    <div class="tools"><button class="sec" id="gopen">Ouvrir un fichier…</button><button class="sec" id="gsave">Enregistrer…</button><span class="sp"></span><span class="hint" id="gname">aucun fichier</span></div>
+    <div class="drop" id="gdrop" style="padding:14px">Dépose un fichier G-code ici (.gcode .nc .gc .txt) ou colle le texte ci-dessous</div>
+    <div class="card fullh" style="flex:1;padding:6px;min-height:0"><textarea id="gtext" spellcheck="false" placeholder="; G-code…"></textarea></div>
+  </div>
+  <div class="col" style="flex:1;min-width:0">
+    <div class="stage"><canvas id="gcv"></canvas></div>
+    <div class="tools"><span class="hint" id="gstats" style="flex:1"></span>
+      <label class="hint"><input type="checkbox" id="gforce"> ignorer les limites</label>
+      <button class="sec" id="gdry" title="Fait tout le trajet, stylo levé">Essai à blanc</button>
+      <button class="green" id="grun">▶ Tracer ce G-code</button></div>
+    <div id="gwarn"></div>
+  </div>
+</section>
+
+<!-- ───────── Bibliothèque ───────── -->
+<section id="s-lib" style="flex-direction:column">
+  <div class="tools">
+    <input type="search" id="libq" placeholder="Rechercher…" style="width:200px">
+    <div class="chips" id="libcats"></div>
+    <span class="sp"></span>
+    <button class="sec" id="libFromComp" title="Enregistre tous les objets visibles de la composition comme un seul dessin">＋ Depuis la composition</button>
+    <button class="sec" id="libFromSvg">＋ Depuis un SVG…</button>
+  </div>
+  <div id="libgrid" style="flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px;align-content:start;padding:2px"></div>
+  <div class="hint" id="libinfo"></div>
+</section>
+
+<!-- ───────── Journal ───────── -->
+<section id="s-journal" style="overflow:auto">
+  <div class="col" style="flex:1;min-width:0">
+    <div class="card"><h3>Journal des tracés</h3>
+      <div class="tools"><span class="hint" id="jtot" style="flex:1"></span><button class="sec" id="jref">Actualiser</button><button class="sec" id="jclr">Effacer le journal</button></div>
+      <div style="overflow:auto;margin-top:6px"><table class="cal" id="jtab" style="width:100%"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── Test machine ───────── -->
+<section id="s-test" style="overflow:auto">
+  <div class="col" style="width:470px;flex:none">
+    <div class="card"><h3>1 · Sens des axes et moteurs</h3>
+      <div class="hint">Place-toi <b>devant</b> la machine. Le stylo reste levé ; chaque test déplace le chariot de 30 mm, lentement. Réponds à chaque question.</div>
+      <div id="dsteps"></div>
+      <div class="tools"><button id="dstart">▶ Lancer le test</button><button class="sec" id="dreset">Recommencer</button></div>
+      <div id="dres"></div>
+    </div>
+  </div>
+  <div class="col" style="width:470px;flex:none">
+    <div class="card"><h3>2 · Échelle (étalonnage)</h3>
+      <div class="hint">La machine trace un carré. Mesure ses côtés à la règle : l'app calcule les pas/mm (<code>$100</code>, <code>$101</code>) à corriger. Le stylo doit être au coin haut-gauche (zéro défini).</div>
+      <div class="row"><label>Côté du carré</label><input type="number" id="calN" value="100" min="20" max="240" step="10"><span class="hint">mm</span><button id="calDraw">Tracer le carré</button></div>
+      <div class="row"><label>Mesuré en X</label><input type="number" id="calMx" step="0.1" placeholder="ex. 98.5"><span class="hint">mm (côté horizontal)</span></div>
+      <div class="row"><label>Mesuré en Y</label><input type="number" id="calMy" step="0.1" placeholder="ex. 100.2"><span class="hint">mm (côté vertical)</span></div>
+      <div class="tools"><button class="sec" id="calCalc">Calculer</button><button id="calApply" style="display:none">Appliquer à la machine</button></div>
+      <div id="calRes" class="hint"></div>
+      <div class="tools" style="margin-top:8px"><button class="sec" id="calBackup">Sauvegarder les réglages de la carte</button><button class="sec" id="calRestore">Restaurer l’étalonnage précédent</button></div>
+      <div class="hint" style="margin-top:4px">Une sauvegarde est faite automatiquement avant chaque étalonnage (dossier <code>~/Library/Application Support/VG-X4/backups</code>).</div>
+    </div>
+    <div class="card"><h3>4 · Jeu mécanique</h3>
+      <div class="hint">À chaque inversion de sens, une courroie lâche peut décaler le trait de quelques dixièmes de mm. La mire trace deux traits verticaux (test X) et deux traits horizontaux (test Y) : sans jeu, ils sont alignés. Mesure le décalage (loupe ou règle) et l'app le compense.</div>
+      <div class="tools" style="margin-top:6px"><button id="bkDraw">Tracer la mire (sans compensation)</button><button class="sec" id="bkCheck">Vérifier avec la compensation</button></div>
+      <div class="row"><label>Décalage en X</label><input type="number" id="bkMx" step="0.05" min="0" max="3" placeholder="ex. 0.3"><span class="hint">mm entre les 2 traits verticaux</span></div>
+      <div class="row"><label>Décalage en Y</label><input type="number" id="bkMy" step="0.05" min="0" max="3" placeholder="ex. 0.2"><span class="hint">mm entre les 2 traits horizontaux</span></div>
+      <div class="tools"><button class="sec" id="bkSave">Enregistrer la compensation</button></div>
+      <div class="hint" id="bkInfo" style="margin-top:4px"></div>
+    </div>
+    <div class="card"><h3>3 · Pression du stylo</h3>
+      <div class="hint">Trace des traits avec des valeurs S croissantes (premier trait = le plus loin de toi). Choisis celui qui est le plus net.</div>
+      <div class="row"><label>S de départ</label><input type="number" id="prS" min="0" max="1000" step="5"><label style="width:auto">pas</label><input type="number" id="prStep" value="15" min="1" max="100"><label style="width:auto">nombre</label><input type="number" id="prN" value="6" min="2" max="12"></div>
+      <div class="tools"><button id="prDraw">Tracer les traits</button></div>
+      <div id="prRes" class="hint" style="margin-top:6px"></div>
+      <div class="row" id="prPick" style="display:none"><label>Meilleur trait n°</label><select id="prSel"></select></div>
+      <div class="row" id="prPick2" style="display:none"><label>Appliquer à</label><select id="prTarget"></select><button id="prUse">Utiliser cette valeur</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── Réglages ───────── -->
+<section id="s-settings" style="overflow:auto">
+  <div class="col" style="width:420px;flex:none">
+    <div class="card"><h3>Liaison</h3>
+      <div class="row"><label>Vitesse (bauds)</label><input type="number" data-c="baud" step="100"></div>
+      <div class="row"><label>Vitesse simulation</label><input type="number" data-c="sim_speed" step="1"><span class="hint">× temps réel</span></div>
+      <div class="row w"><input type="checkbox" data-c="keep_awake" id="kaw"><label for="kaw" style="width:auto;color:var(--fg)">Empêcher la mise en veille du Mac pendant un tracé</label></div>
+      <div class="row w"><input type="checkbox" data-c="notify" id="ntf"><label for="ntf" style="width:auto;color:var(--fg)">Notification (et son) à la fin d'un tracé, à un changement de stylo ou en cas d'erreur</label></div>
+      <div class="row w"><input type="checkbox" data-c="auto_reconnect" id="arc"><label for="arc" style="width:auto;color:var(--fg)">Se reconnecter automatiquement si la liaison est perdue</label></div>
+    </div>
+    <div class="card"><h3>Zone et papier</h3>
+      <div class="row"><label>Zone machine</label><input type="number" data-c="area_w"> × <input type="number" data-c="area_h"> <span class="hint">mm</span></div>
+      <div class="row"><label>Papier</label><select id="paper"></select></div>
+      <div class="row"><label></label><input type="number" data-c="paper_w"> × <input type="number" data-c="paper_h"> <span class="hint">mm</span></div>
+      <div class="hint">Le papier est un simple repère visuel ; la limite de sécurité est la zone machine, mesurée depuis le point zéro (coin haut-gauche).</div>
+    </div>
+  </div>
+  <div class="col" style="width:440px;flex:none">
+    <div class="card"><h3>Stylo et vitesses</h3>
+      <div class="row"><label>Stylo baissé (S)</label><input type="number" data-c="pen_down_s" min="0" max="1000"><span class="hint">0–1000, défaut 905</span></div>
+      <div class="row"><label>Pause stylo</label><input type="number" data-c="pen_settle_ms" step="50"><span class="hint">ms après chaque levée/baisse</span></div>
+      <div class="row"><label>Vitesse de tracé</label><input type="number" data-c="draw_feed" step="100"><span class="hint">mm/min (max 5000)</span></div>
+      <div class="row"><label>Vitesse à vide</label><input type="number" data-c="travel_feed" step="100"><span class="hint">mm/min</span></div>
+      <div class="row"><label>Vitesse manuelle</label><input type="number" data-c="jog_feed" step="100"><span class="hint">mm/min</span></div>
+    </div>
+    <div class="card"><h3>Génération du G-code</h3>
+      <div class="row w"><input type="checkbox" data-c="invert_y" id="iy"><label for="iy" style="width:auto;color:var(--fg)">Inverser l'axe Y</label></div>
+      <div class="hint" style="margin:-2px 0 6px 24px">Par défaut +Y = vers le bas du papier (origine en haut à gauche). Si la plume part vers le haut quand tu cliques ▼, coche cette case.</div>
+      <div class="row w"><input type="checkbox" data-c="invert_x" id="ix"><label for="ix" style="width:auto;color:var(--fg)">Inverser l'axe X</label></div>
+      <div class="hint" style="margin:-2px 0 6px 24px">À cocher si le chariot part à gauche quand tu cliques ▶ (voir l'onglet Test machine).</div>
+      <div class="row w"><input type="checkbox" data-c="return_home" id="rh"><label for="rh" style="width:auto;color:var(--fg)">Revenir au zéro à la fin</label></div>
+      <div class="row w"><input type="checkbox" data-c="optimize" id="op"><label for="op" style="width:auto;color:var(--fg)">Optimiser l'ordre des tracés (moins de déplacements)</label></div>
+      <div class="row"><label>Joindre si écart &lt;</label><input type="number" data-c="join_tol" step="0.1"><span class="hint">mm</span></div>
+      <div class="row"><label>Simplification</label><input type="number" data-c="simplify" step="0.01"><span class="hint">mm (tolérance)</span></div>
+      <div class="row"><label>Jeu mécanique X</label><input type="number" data-c="backlash_x" step="0.05" min="0" max="3"><span class="hint">mm (voir Test machine)</span></div>
+      <div class="row"><label>Jeu mécanique Y</label><input type="number" data-c="backlash_y" step="0.05" min="0" max="3"><span class="hint">mm</span></div>
+    </div>
+    <div class="card"><h3>Stylos (changement en cours de tracé)</h3>
+      <div class="hint" style="margin-bottom:6px">Chaque objet peut être tracé avec un stylo différent. Entre deux stylos, le tracé se met en pause et te demande de changer le feutre.</div>
+      <div class="pens" id="pens"></div>
+    </div>
+    <div class="hint">Réglages enregistrés dans <code>~/Library/Application Support/VG-X4/settings.json</code></div>
+  </div>
+</section>
+</main>
+
+<div id="toasts"></div>
+<div id="modal"><div class="box"><h2 id="mt"></h2><div id="mb"></div><div class="btns"><button class="sec" id="mno">Annuler</button><button id="myes">OK</button></div></div></div>
+<input type="file" id="fileAny" hidden><input type="file" id="fileCsv" accept=".csv,.txt,text/csv,text/plain" hidden>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let CFG={}, ST={connected:false,job:{}}, FONTS=[], ITEMS=[], SEL=null, SELS=new Set(), NEXT=1, lastLog=0, GUIDES=[], PROJ={path:null,name:''};
+const PENS=()=>(CFG.pens&&CFG.pens.length?CFG.pens:[{name:'Noir',color:'#1d1d1f'}]);
+const STEPS=[0.1,0.5,1,5,10,50]; let step=1;
+
+/* ───── utilitaires ───── */
+async function api(path,body){
+  const o=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+  const r=await fetch('/api'+path,o); const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error||('Erreur '+r.status)); return j;
+}
+function toast(m,err){const d=document.createElement('div');d.className='toast'+(err?' err':'');d.textContent=m;$('#toasts').append(d);setTimeout(()=>d.remove(),err?7000:3500)}
+async function act(fn){try{return await fn()}catch(e){toast(e.message,true)}}
+function ask(title,html,ok='OK',cancel='Annuler'){return new Promise(res=>{
+  $('#mt').textContent=title;$('#mb').innerHTML=html;$('#myes').textContent=ok;$('#mno').textContent=cancel;$('#modal').classList.add('on');
+  const done=v=>{$('#modal').classList.remove('on');$('#myes').onclick=$('#mno').onclick=null;res(v)};
+  $('#myes').onclick=()=>done(true);$('#mno').onclick=()=>done(false);$('#myes').focus()})}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtT=s=>{s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h} h ${String(m).padStart(2,'0')} min`:m?`${m} min ${String(s%60).padStart(2,'0')} s`:`${s} s`};
+let saveT;function saveCfg(d){Object.assign(CFG,d);clearTimeout(saveT);saveT=setTimeout(()=>act(async()=>{CFG=await api('/settings',d)}),250)}
+function saveUI(k,v){CFG.ui=Object.assign(CFG.ui||{},{[k]:v});saveCfg({ui:CFG.ui})}
+
+/* ───── onglets ───── */
+function tab(t){$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
+  if(t==='compose')draw();if(t==='gcode')gdraw();if(t==='journal')loadJournal();if(t==='lib')loadLib().catch(e=>toast(e.message,true));saveUI('tab',t)}
+$$('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+const curTab=()=>$('#tabs .on').dataset.t;
+
+/* ───── scène (canvas) ───── */
+class Stage{
+  constructor(cv){this.cv=cv;this.k=1;this.ox=0;this.oy=0;this.z=1;this.dx=0;this.dy=0;this.W=1;this.H=1;this.kf=1;this.rr=0;new ResizeObserver(()=>this.fit()).observe(cv.parentElement)}
+  fit(){const r=this.cv.parentElement.getBoundingClientRect(),d=devicePixelRatio||1;
+    if(r.width<10)return;this.cv.width=r.width*d;this.cv.height=r.height*d;this.d=d;this.W=r.width;this.H=r.height;
+    const m=26,aw=CFG.area_w||310,ah=CFG.area_h||256;this.kf=Math.max(.3,Math.min((r.width-this.rr-m*2)/aw,(r.height-m*2)/ah));this.apply()}
+  /* zoom (z=1 : tout voir) et déplacement (dx, dy) */
+  apply(){const aw=CFG.area_w||310,ah=CFG.area_h||256,m=26;this.k=this.kf*this.z;
+    const ax=(len,view,d)=>{const b=(view-len)/2;if(len<=view)return[b,0];const o=Math.min(m,Math.max(view-len-m,b+d));return[o,o-b]};
+    [this.ox,this.dx]=ax(aw*this.k,this.W-this.rr,this.dx);[this.oy,this.dy]=ax(ah*this.k,this.H,this.dy);
+    this.onfit&&this.onfit();this.onzoom&&this.onzoom()}
+  zoomAt(f,px,py){const nz=Math.max(1,Math.min(16,this.z*f));if(Math.abs(nz-this.z)<1e-6)return;const[mx,my]=this.mm(px,py),aw=CFG.area_w||310,ah=CFG.area_h||256,k=this.kf*nz;
+    this.z=nz;this.dx=px-mx*k-(this.W-this.rr-aw*k)/2;this.dy=py-my*k-(this.H-ah*k)/2;if(nz<=1.0001){this.z=1;this.dx=this.dy=0}this.apply()}
+  zoomBox(L,T,R,B){const aw=CFG.area_w||310,ah=CFG.area_h||256,bw=Math.max(R-L,6),bh=Math.max(B-T,6);
+    const Wv=this.W-this.rr;this.z=Math.max(1,Math.min(16,Math.min(Wv*.7/(bw*this.kf),this.H*.7/(bh*this.kf))));const k=this.kf*this.z;
+    this.dx=Wv/2-(L+R)/2*k-(Wv-aw*k)/2;this.dy=this.H/2-(T+B)/2*k-(this.H-ah*k)/2;if(this.z<=1.0001){this.z=1;this.dx=this.dy=0}this.apply()}
+  panBy(x,y){if(this.z<=1)return;this.dx+=x;this.dy+=y;this.apply()}
+  reset(){this.z=1;this.dx=this.dy=0;this.apply()}
+  ctx(){const c=this.cv.getContext('2d');c.setTransform(this.d,0,0,this.d,0,0);return c}
+  px(x,y){return[this.ox+x*this.k,this.oy+y*this.k]}
+  mm(px,py){return[(px-this.ox)/this.k,(py-this.oy)/this.k]}
+  base(){const c=this.ctx(),css=getComputedStyle(document.documentElement),aw=CFG.area_w,ah=CFG.area_h,k=this.k;
+    c.clearRect(0,0,this.cv.width,this.cv.height);
+    c.fillStyle=css.getPropertyValue('--cv');c.fillRect(0,0,this.cv.width,this.cv.height);
+    c.fillStyle=css.getPropertyValue('--sheet');c.fillRect(this.ox,this.oy,aw*k,ah*k);
+    c.lineWidth=1;
+    for(let x=0;x<=aw;x+=10){c.strokeStyle=css.getPropertyValue(x%50?'--grid':'--grid2');c.beginPath();c.moveTo(this.ox+x*k,this.oy);c.lineTo(this.ox+x*k,this.oy+ah*k);c.stroke()}
+    for(let y=0;y<=ah;y+=10){c.strokeStyle=css.getPropertyValue(y%50?'--grid':'--grid2');c.beginPath();c.moveTo(this.ox,this.oy+y*k);c.lineTo(this.ox+aw*k,this.oy+y*k);c.stroke()}
+    if(k>=7){c.save();c.globalAlpha=.45;c.lineWidth=.5;c.strokeStyle=css.getPropertyValue('--grid');c.beginPath();      // quadrillage au millimètre quand on zoome
+      const x0=Math.max(0,Math.floor(-this.ox/k)),x1=Math.min(aw,Math.ceil((this.W-this.ox)/k)),y0=Math.max(0,Math.floor(-this.oy/k)),y1=Math.min(ah,Math.ceil((this.H-this.oy)/k));
+      for(let x=x0;x<=x1;x++)if(x%10){c.moveTo(this.ox+x*k,this.oy+y0*k);c.lineTo(this.ox+x*k,this.oy+y1*k)}
+      for(let y=y0;y<=y1;y++)if(y%10){c.moveTo(this.ox+x0*k,this.oy+y*k);c.lineTo(this.ox+x1*k,this.oy+y*k)}
+      c.stroke();c.restore()}
+    c.fillStyle=css.getPropertyValue('--mut');c.font='10px "SF Mono",ui-monospace,Menlo,monospace';
+    const st=k>=4?10:50,ly=this.oy>=14?this.oy-6:11,lx=this.ox>=26;c.textAlign='center';
+    for(let x=0;x<=aw;x+=st){const X=this.ox+x*k;if(X>-10&&X<this.W+10)c.fillText(x,X,ly)}
+    c.textAlign=lx?'right':'left';for(let y=st;y<=ah;y+=st){const Y=this.oy+y*k+3;if(Y>0&&Y<this.H+10)c.fillText(y,lx?this.ox-5:3,Y)}
+    const pw=Math.min(CFG.paper_w,aw),ph=Math.min(CFG.paper_h,ah);
+    const A2=css.getPropertyValue('--ac2').trim()||'#e8531f';c.strokeStyle=A2;c.setLineDash([6,4]);c.lineWidth=1.3;c.strokeRect(this.ox,this.oy,pw*k,ph*k);c.setLineDash([]);
+    const mg=CFG.margin||0;if(mg>0&&pw>2*mg+2&&ph>2*mg+2){c.save();c.globalAlpha=.45;c.strokeStyle=A2;c.setLineDash([2,4]);c.lineWidth=1;c.strokeRect(this.ox+mg*k,this.oy+mg*k,(pw-2*mg)*k,(ph-2*mg)*k);c.restore()}
+    c.strokeStyle=css.getPropertyValue('--mut');c.strokeRect(this.ox,this.oy,aw*k,ah*k);
+    const rc=ST&&ST.reach;if(rc&&((rc.w&&rc.w<aw)||(rc.h&&rc.h<ah))){c.fillStyle='rgba(215,0,21,.08)';c.strokeStyle='#d70015';c.lineWidth=1.2;c.setLineDash([5,3]);
+      if(rc.w&&rc.w<aw){c.fillRect(this.ox+rc.w*k,this.oy,(aw-rc.w)*k,ah*k);c.beginPath();c.moveTo(this.ox+rc.w*k,this.oy);c.lineTo(this.ox+rc.w*k,this.oy+ah*k);c.stroke()}
+      if(rc.h&&rc.h<ah){c.fillRect(this.ox,this.oy+rc.h*k,aw*k,(ah-rc.h)*k);c.beginPath();c.moveTo(this.ox,this.oy+rc.h*k);c.lineTo(this.ox+aw*k,this.oy+rc.h*k);c.stroke()}
+      c.setLineDash([])}
+    // zéro
+    c.fillStyle=A2;c.beginPath();c.arc(this.ox,this.oy,5,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5;c.stroke();
+    return c}
+  trail(c){if(!TRAIL.length)return;c.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--ac2').trim()||'#e8531f';c.lineWidth=Math.max(1.4,.6*this.k);c.lineJoin=c.lineCap='round';c.beginPath();for(const t of TRAIL){if(!t.pen||t.p.length<2)continue;const[x,y]=this.px(t.p[0][0],t.p[0][1]);c.moveTo(x,y);for(let i=1;i<t.p.length;i++)c.lineTo(...this.px(t.p[i][0],t.p[i][1]))}c.stroke()}
+  pen(c){if(!ST.connected||!ST.wpos)return;const[x,y]=this.px(ST.wpos[0],ST.wpos[1]);
+    c.strokeStyle=ST.spindle>0?'#d70015':'#1a9d4b';c.lineWidth=2;c.beginPath();c.arc(x,y,6,0,7);c.moveTo(x-11,y);c.lineTo(x+11,y);c.moveTo(x,y-11);c.lineTo(x,y+11);c.stroke()}
+}
+const AC=()=>getComputedStyle(document.documentElement).getPropertyValue('--ac').trim()||'#1d3fc4';
+const stage=new Stage($('#cv')), gstage=new Stage($('#gcv'));
+stage.onfit=()=>draw();gstage.onfit=()=>gdraw();
+function zoomCtl(st,cv,focus){const box=cv.parentElement,d=document.createElement('div');d.className='zoomctl';
+  d.innerHTML=`<button data-a=out title="Zoom arrière  ( − )">−</button><button data-a=fit class=zl title="Tout voir  ( 0 )">100 %</button><button data-a=in title="Zoom avant  ( + )">+</button>${focus?'<button data-a=sel title="Zoomer sur l’objet sélectionné  ( F )">⌖</button>':''}`;box.append(d);
+  const upd=()=>{d.querySelector('.zl').textContent=Math.round(st.z*100)+'%';d.querySelector('[data-a=out]').disabled=st.z<=1.001;d.querySelector('[data-a=in]').disabled=st.z>=15.99;box.classList.toggle('panning',st.z>1)};
+  st.zoomEl=d;st.onzoom=upd;upd();
+  const anchor=()=>{const b=focus&&focus(),Wv=st.W-st.rr;if(b){const[x,y]=st.px(b.cx,b.cy);if(x>0&&y>0&&x<Wv&&y<st.H)return[x,y]}return[Wv/2,st.H/2]};
+  st.zin=()=>st.zoomAt(1.5,...anchor());st.zout=()=>st.zoomAt(1/1.5,...anchor());
+  st.zsel=()=>{const b=focus&&focus();if(b)st.zoomBox(b.L,b.T,b.R,b.B)};
+  d.addEventListener('click',e=>{const a=e.target.closest('button')?.dataset.a;if(a==='in')st.zin();else if(a==='out')st.zout();else if(a==='fit')st.reset();else if(a==='sel')st.zsel()});
+  d.addEventListener('pointerdown',e=>e.stopPropagation());
+  cv.addEventListener('wheel',e=>{const r=cv.getBoundingClientRect();
+    if(e.ctrlKey||e.metaKey){e.preventDefault();st.zoomAt(Math.exp(-e.deltaY*.01),e.clientX-r.left,e.clientY-r.top)}      // pincement du trackpad ou ⌘ + molette
+    else if(st.z>1){e.preventDefault();st.panBy(-e.deltaX,-e.deltaY)}},{passive:false})}
+zoomCtl(stage,$('#cv'),()=>{const l=selAll().filter(i=>i.vis);return l.length?groupBox(l):null});zoomCtl(gstage,$('#gcv'),null);gstage.rr=52;
+/* déplacer la vue en glissant le fond (quand on a zoomé) */
+$('#gcv').addEventListener('pointerdown',e=>{if(gstage.z<=1)return;const sx=e.clientX,sy=e.clientY,x0=gstage.dx,y0=gstage.dy,el=$('#gcv');el.setPointerCapture(e.pointerId);gstage.cv.parentElement.classList.add('grab');
+  const mv=ev=>{gstage.dx=x0+ev.clientX-sx;gstage.dy=y0+ev.clientY-sy;gstage.apply()},up=()=>{el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);gstage.cv.parentElement.classList.remove('grab')};
+  el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up)});
+
+/* ───── objets ───── */
+const TYPE_LABEL={text:'Texte',svg:'SVG',image:'Image',shape:'Forme'};
+let EST={sig:'',sec:0,info:''},estT=null;
+const estSig=()=>JSON.stringify(ITEMS.filter(i=>i.vis&&i.paths.length).map(i=>[i.id,+i.cx.toFixed(2),+i.cy.toFixed(2),i.rot,i.scale,i.paths.length,i.pen||0]));
+function estimateSoon(){clearTimeout(estT);estT=setTimeout(async()=>{const g=groups();if(!g.length){EST={sig:'',sec:0,info:''};return}const sg=estSig();
+  try{const r=await api('/estimate',{groups:g});EST={sig:sg,sec:r.seconds,info:`Modèle du planificateur : ${fmtT(r.model)} × ${r.factor}${r.samples?` (corrigé d’après tes ${r.samples} derniers tracés)`:''}`};updInfo()}catch(e){}},600)}
+function mkPath(paths){const p=new Path2D();for(const s of paths){if(s.length<2)continue;p.moveTo(s[0][0],s[0][1]);for(let i=1;i<s.length;i++)p.lineTo(s[i][0],s[i][1])}return p}
+function plen(paths){let L=0;for(const s of paths)for(let i=1;i<s.length;i++)L+=Math.hypot(s[i][0]-s[i-1][0],s[i][1]-s[i-1][1]);return L}
+function paperCenter(){return[Math.min(CFG.paper_w,CFG.area_w)/2,Math.min(CFG.paper_h,CFG.area_h)/2]}
+function newItem(type,extra,quiet){const[cx,cy]=paperCenter();
+  const it={id:NEXT++,type,name:TYPE_LABEL[type],cx,cy,rot:0,scale:1,paths:[],w:0,h:0,vis:true,pen:0,p:{},tok:0,...extra};
+  it.path2d=new Path2D();it.len=0;ITEMS.push(it);if(!quiet){select(it);commit(true)}return it}
+function addText(){const u=CFG.ui||{};
+  const it=newItem('text',{p:{text:'Bonjour !',font:u.font||'scripts',size:+u.size||10,line_spacing:1.9,letter_spacing:0,align:'left',slant:0,jitter:0,max_width:0,seed:1,trace:'skeleton',word_spacing:0,wobble:0,smooth:0}});
+  vectorize(it)}
+async function loadFile(f){
+  const n=f.name.toLowerCase();
+  if(n.endsWith('.vg4')){await openProjectFile(f);return}
+  if(/\.(gcode|gco|gc|nc|ngc|txt|tap)$/.test(n)){const t=await f.text();setGcode(t,f.name);tab('gcode');return}
+  if(n.endsWith('.svg')||f.type==='image/svg+xml'){
+    const r=await fetch('/api/upload?kind=svg',{method:'POST',headers:{'X-Filename':encodeURIComponent(f.name)},body:f}).then(r=>r.json());
+    const it=newItem('svg',{name:f.name,uploadId:r.id,src:{name:f.name,blob:f},p:{fill:'none',hatch:1,angle:45}});await vectorize(it);
+    // adapte à la zone si trop grand
+    const m=Math.min(CFG.paper_w,CFG.area_w)*.9,n2=Math.min(CFG.paper_h,CFG.area_h)*.9;
+    if(it.w>m||it.h>n2){it.scale=Math.min(m/it.w,n2/it.h)}select(it);draw();commit(true);await splitSvgColors(it);return}
+  if(/\.(docx?|pdf)$/.test(n)||f.type==='application/pdf'){await openDocument(f);return}
+  if(f.type.startsWith('image/')||/\.(png|jpe?g|gif|bmp|webp|tiff?)$/.test(n)){
+    const it=await makeImageItem(f,f.name);renderInsp();vectorize(it);return}
+  toast('Format non pris en charge : '+f.name,true)}
+async function makeImageItem(f,name,o={}){
+  const r=await fetch('/api/upload?kind=image',{method:'POST',headers:{'X-Filename':encodeURIComponent(name)},body:f});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||('Erreur '+r.status));
+  const url=URL.createObjectURL(f),img=new Image();await new Promise(ok=>{img.onload=ok;img.src=url});
+  const wmm=o.width||Math.round(Math.min(120,Math.min(CFG.paper_w,CFG.area_w)*.6));
+  const it=newItem('image',{name,uploadId:j.id,img,ar:img.height/img.width,src:{name,blob:f},...(o.extra||{}),
+    p:{mode:o.mode||'contour',threshold:j.otsu||128,invert:false,width:Math.round(wmm*10)/10,hatch:.5,angle:45,min_blob:.6,smooth:.6,show:true,levels:4}},o.quiet);
+  it.h=wmm*it.ar;it.w=wmm;it.otsu=j.otsu;return it}
+function pick(accept,multi=true){const i=$('#fileAny');i.accept=accept;i.multiple=multi;i.value='';i.onchange=()=>[...i.files].forEach(f=>act(()=>loadFile(f)));i.click()}
+$('#addText').onclick=addText;$('#addSvg').onclick=()=>pick('.svg,image/svg+xml');$('#addImg').onclick=()=>pick('image/*');$('#addDoc').onclick=()=>pick('.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document',false);
+
+const timers={};
+function schedule(it,ms=280){clearTimeout(timers[it.id]);timers[it.id]=setTimeout(()=>vectorize(it),ms)}
+async function vectorize(it){
+  const tok=++it.tok;it.busy=true;updInfo();
+  try{let r;
+    if(it.type==='text')r=await api('/vec/text',{...it.p,text:mergeText(it.p.text)});
+    else if(it.type==='shape')r=await api('/vec/shape',it.p);
+    else if(it.type==='svg')r=await api('/vec/svg',{id:it.uploadId,...it.p});
+    else r=await api('/vec/image',{id:it.uploadId,...it.p});
+    if(tok!==it.tok)return;
+    it.paths=r.paths;it.meta=r;it.len=plen(r.paths);it.path2d=mkPath(r.paths);
+    if(it.type==='image'){it.w=it.p.width;it.h=it.p.width*it.ar}else{it.w=r.w;it.h=r.h}
+    if(it.type==='svg')it.baseW=r.w;
+    if(it.type==='text')it.name=(it.p.text.trim().split('\n')[0]||'Texte').slice(0,26);
+  }catch(e){if(tok===it.tok)toast(e.message,true)}
+  if(tok===it.tok){it.busy=false;amend()}draw();renderItems();updInfo()}
+function select(it){SEL=it?it.id:null;SELS=new Set(it?[it.id]:[]);renderItems();renderInsp();draw()}
+function selectMany(ids){SELS=new Set(ids.filter(id=>ITEMS.some(i=>i.id===id)));SEL=SELS.size===1?[...SELS][0]:null;renderItems();renderInsp();draw()}
+const sel=()=>ITEMS.find(i=>i.id===SEL);
+const selAll=()=>ITEMS.filter(i=>SELS.has(i.id));
+function corners(it,cx=it.cx,cy=it.cy){const c=Math.cos(it.rot*Math.PI/180),s=Math.sin(it.rot*Math.PI/180),hw=it.w*it.scale/2,hh=it.h*it.scale/2;
+  return[[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]].map(([x,y])=>[cx+x*c-y*s,cy+x*s+y*c])}
+function bboxOf(it,cx=it.cx,cy=it.cy){const cs=corners(it,cx,cy),xs=cs.map(p=>p[0]),ys=cs.map(p=>p[1]),L=Math.min(...xs),R=Math.max(...xs),T=Math.min(...ys),B=Math.max(...ys);return{L,R,T,B,cx:(L+R)/2,cy:(T+B)/2}}
+const paperDims=()=>[Math.min(CFG.paper_w,CFG.area_w),Math.min(CFG.paper_h,CFG.area_h)];
+const snapOn=()=>(CFG.ui||{}).snap!==false;
+function groupBox(list){let L=1e9,R=-1e9,T=1e9,B=-1e9;for(const i of list){const b=bboxOf(i);L=Math.min(L,b.L);R=Math.max(R,b.R);T=Math.min(T,b.T);B=Math.max(B,b.B)}return{L,R,T,B,cx:(L+R)/2,cy:(T+B)/2}}
+function snapBox(b,ex){const[pw,ph]=paperDims(),mg=CFG.margin||0;
+  const cx=[0,mg,pw/2,pw-mg,pw],cy=[0,mg,ph/2,ph-mg,ph];
+  for(const o of ITEMS){if(ex.has(o)||!o.vis)continue;const q=bboxOf(o);cx.push(q.L,q.cx,q.R);cy.push(q.T,q.cy,q.B)}
+  const thr=6/stage.k;let bx=null,by=null;
+  for(const v of [b.L,b.cx,b.R])for(const t of cx){const d=t-v;if(Math.abs(d)<=thr&&(!bx||Math.abs(d)<Math.abs(bx.d)))bx={d,t}}
+  for(const v of [b.T,b.cy,b.B])for(const t of cy){const d=t-v;if(Math.abs(d)<=thr&&(!by||Math.abs(d)<Math.abs(by.d)))by={d,t}}
+  const g=[];if(bx)g.push({x:bx.t});if(by)g.push({y:by.t});return{dx:bx?bx.d:0,dy:by?by.d:0,g}}
+function snapMove(it,nx,ny){const r=snapBox(bboxOf(it,nx,ny),new Set([it]));return{x:nx+r.dx,y:ny+r.dy,g:r.g}}
+function alignSel(kind){const L=selAll();if(!L.length)return;const b=groupBox(L),[pw,ph]=paperDims(),mg=CFG.margin||0;
+  const dxs={l:mg-b.L,c:pw/2-b.cx,r:pw-mg-b.R},dys={t:mg-b.T,m:ph/2-b.cy,b:ph-mg-b.B};let dx=0,dy=0;
+  if(kind==='o'){dx=pw/2-b.cx;dy=ph/2-b.cy}else if(kind in dxs)dx=dxs[kind];else dy=dys[kind];
+  L.forEach(i=>{i.cx+=dx;i.cy+=dy});draw();syncInsp();commit(true)}
+function centerAll(){const v=ITEMS.filter(i=>i.vis&&i.paths.length);if(!v.length)return;
+  let L=1e9,R=-1e9,T=1e9,B=-1e9;v.forEach(i=>{const b=bboxOf(i);L=Math.min(L,b.L);R=Math.max(R,b.R);T=Math.min(T,b.T);B=Math.max(B,b.B)});
+  const[cx,cy]=paperCenter(),dx=cx-(L+R)/2,dy=cy-(T+B)/2;v.forEach(i=>{i.cx+=dx;i.cy+=dy});draw();syncInsp();commit(true)}
+const AW=()=>Math.min(CFG.area_w,(ST.reach&&ST.reach.w)||1e9),AH=()=>Math.min(CFG.area_h,(ST.reach&&ST.reach.h)||1e9);
+function outside(it){return corners(it).some(([x,y])=>x<-.01||y<-.01||x>AW()+.01||y>AH()+.01)}
+function finalPaths(it){const c=Math.cos(it.rot*Math.PI/180),s=Math.sin(it.rot*Math.PI/180),k=it.scale;
+  return it.paths.map(p=>p.map(([x,y])=>[it.cx+(x*c-y*s)*k,it.cy+(x*s+y*c)*k]))}
+
+const underlays=new WeakMap();
+function underlay(it){const key=it.p.invert?1:0;let u=underlays.get(it);if(u&&u.key===key)return u.c;
+  const m=700,r=Math.min(1,m/Math.max(it.img.width,it.img.height)),c=document.createElement('canvas');c.width=Math.round(it.img.width*r);c.height=Math.round(it.img.height*r);
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(it.img,0,0,c.width,c.height);
+  if(key){x.globalCompositeOperation='difference';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}
+  underlays.set(it,{key,c});return c}
+
+function draw(){
+  if(curTab()!=='compose'||!stage.d)return;
+  const c=stage.base(),k=stage.k;
+  for(const it of ITEMS){if(!it.vis)continue;
+    c.save();const[px,py]=stage.px(it.cx,it.cy);c.translate(px,py);c.rotate(it.rot*Math.PI/180);c.scale(k*it.scale,k*it.scale);
+    if(it.type==='image'&&it.p.show&&it.img){c.globalAlpha=.3;c.drawImage(underlay(it),-it.w/2,-it.h/2,it.w,it.h);c.globalAlpha=1}
+    c.lineWidth=Math.max(1.1,.5*k)/(k*it.scale);c.lineJoin=c.lineCap='round';
+    c.strokeStyle=SELS.has(it.id)?getComputedStyle(document.documentElement).getPropertyValue('--ink'):(outside(it)?'#d70015':((it.pen||0)>0&&PENS()[it.pen]?PENS()[it.pen].color:getComputedStyle(document.documentElement).getPropertyValue('--fg')));
+    c.stroke(it.path2d);c.restore()}
+  if(GUIDES.length){c.save();c.strokeStyle='#d6249f';c.lineWidth=1;c.setLineDash([4,3]);c.beginPath();
+    for(const g of GUIDES){if(g.x!==undefined){const[x]=stage.px(g.x,0);c.moveTo(x,stage.oy);c.lineTo(x,stage.oy+CFG.area_h*stage.k)}else{const[,y]=stage.px(0,g.y);c.moveTo(stage.ox,y);c.lineTo(stage.ox+CFG.area_w*stage.k,y)}}
+    c.stroke();c.restore()}
+  const it=sel(),many=selAll().filter(i=>i.vis);
+  if(many.length>1){c.save();c.strokeStyle=AC();c.lineWidth=1;c.setLineDash([3,3]);c.globalAlpha=.7;
+    for(const o of many){c.beginPath();corners(o).map(([x,y])=>stage.px(x,y)).forEach((p,i)=>i?c.lineTo(...p):c.moveTo(...p));c.closePath();c.stroke()}
+    const g=groupBox(many),[x0,y0]=stage.px(g.L,g.T),[x1,y1]=stage.px(g.R,g.B);c.globalAlpha=1;c.setLineDash([6,4]);c.lineWidth=1.3;c.strokeRect(x0-4,y0-4,x1-x0+8,y1-y0+8);
+    c.setLineDash([]);c.fillStyle=AC();c.font='600 11px sans-serif';c.textAlign='left';c.fillText(many.length+' objets',x0-4,y0-9);c.restore()}
+  else if(it&&it.vis){const cs=corners(it).map(([x,y])=>stage.px(x,y));
+    c.strokeStyle=outside(it)?'#d70015':AC();c.setLineDash([5,4]);c.lineWidth=1;c.beginPath();cs.forEach((p,i)=>i?c.lineTo(...p):c.moveTo(...p));c.closePath();c.stroke();c.setLineDash([]);
+    if(TOOL==='select'){const h=handles(it);c.fillStyle=AC();c.fillRect(h.sc[0]-6,h.sc[1]-6,12,12);
+      c.beginPath();c.moveTo(...h.top);c.lineTo(...h.rot);c.stroke();c.beginPath();c.arc(...h.rot,6,0,7);c.fill()}
+    if(it.busy){c.fillStyle=AC();c.font='12px sans-serif';c.textAlign='left';c.fillText('calcul…',cs[0][0],cs[0][1]-8)}}
+  if(MARQ){const x=Math.min(MARQ.x0,MARQ.x1),y=Math.min(MARQ.y0,MARQ.y1),w=Math.abs(MARQ.x1-MARQ.x0),h=Math.abs(MARQ.y1-MARQ.y0);
+    c.save();c.fillStyle=AC();c.globalAlpha=.09;c.fillRect(x,y,w,h);c.globalAlpha=.9;c.strokeStyle=AC();c.lineWidth=1;c.setLineDash([4,3]);c.strokeRect(x+.5,y+.5,w,h);c.restore()}
+  stage.trail(c);stage.pen(c);updTbar()}
+function handles(it){const cs=corners(it).map(([x,y])=>stage.px(x,y));const top=[(cs[0][0]+cs[1][0])/2,(cs[0][1]+cs[1][1])/2];
+  const cx=stage.px(it.cx,it.cy),dx=top[0]-cx[0],dy=top[1]-cx[1],L=Math.hypot(dx,dy)||1;
+  return{sc:cs[2],top,rot:[top[0]+dx/L*24,top[1]+dy/L*24],c:cx}}
+function inItem(it,mx,my){const c=Math.cos(-it.rot*Math.PI/180),s=Math.sin(-it.rot*Math.PI/180),dx=mx-it.cx,dy=my-it.cy,pad=2;
+  const x=dx*c-dy*s,y=dx*s+dy*c;return Math.abs(x)<=it.w*it.scale/2+pad&&Math.abs(y)<=it.h*it.scale/2+pad}
+let drag=null,TOOL='select',SPACE=false,MARQ=null;
+const curTool=()=>SPACE?'hand':TOOL;
+const cvEl=$('#cv');
+function startPan(e,keep){drag={m:'pan',keep,sx:e.clientX,sy:e.clientY,dx0:stage.dx,dy0:stage.dy};cvEl.setPointerCapture(e.pointerId);$('#stage').classList.add('grab')}
+cvEl.addEventListener('pointerdown',e=>{
+  const r=cvEl.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,[mx,my]=stage.mm(px,py),it=sel(),tool=curTool();
+  if(e.button===1||tool==='hand'){startPan(e,tool==='hand');return}
+  if(tool==='select'&&it&&it.vis){const h=handles(it);
+    if(Math.hypot(px-h.rot[0],py-h.rot[1])<=9){drag={m:'rot',it,c:h.c};cvEl.setPointerCapture(e.pointerId);return}
+    if(Math.abs(px-h.sc[0])<=9&&Math.abs(py-h.sc[1])<=9){drag={m:'sc',it,c:h.c,d0:Math.hypot(h.sc[0]-h.c[0],h.sc[1]-h.c[1]),s0:it.scale};cvEl.setPointerCapture(e.pointerId);return}}
+  const hit=[...ITEMS].reverse().find(i=>i.vis&&inItem(i,mx,my));
+  if(tool==='marquee'||(!hit&&e.shiftKey)){drag={m:'box',add:e.shiftKey,base:new Set(SELS),hit,px,py};MARQ={x0:px,y0:py,x1:px,y1:py};cvEl.setPointerCapture(e.pointerId);return}
+  if(hit){
+    if(e.shiftKey){const n=new Set(SELS);n.has(hit.id)?n.delete(hit.id):n.add(hit.id);selectMany([...n]);return}
+    if(SELS.size>1&&SELS.has(hit.id)){const L=selAll();drag={m:'mvm',items:L.map(i=>({it:i,cx:i.cx,cy:i.cy})),b0:groupBox(L),mx,my}}
+    else{if(hit.id!==SEL)select(hit);drag={m:'mv',it:hit,mx,my,cx:hit.cx,cy:hit.cy}}
+    cvEl.setPointerCapture(e.pointerId)}
+  else if(stage.z>1){startPan(e)}
+  else select(null)});
+cvEl.addEventListener('pointermove',e=>{
+  const r=cvEl.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,[mx,my]=stage.mm(px,py);
+  $('#cvinfo').dataset.xy=`${mx.toFixed(1)}, ${my.toFixed(1)}`;
+  if(!drag)return;
+  if(drag.m==='pan'){const ddx=e.clientX-drag.sx,ddy=e.clientY-drag.sy;if(Math.abs(ddx)+Math.abs(ddy)>3)drag.moved=true;stage.dx=drag.dx0+ddx;stage.dy=drag.dy0+ddy;stage.apply();return}
+  if(drag.m==='box'){MARQ.x1=px;MARQ.y1=py;if(Math.abs(px-drag.px)+Math.abs(py-drag.py)>4)drag.moved=true;draw();return}
+  drag.moved=true;
+  if(drag.m==='mvm'){let dx=mx-drag.mx,dy=my-drag.my;const b0=drag.b0;
+    if(snapOn()&&!e.altKey){const b={L:b0.L+dx,R:b0.R+dx,T:b0.T+dy,B:b0.B+dy,cx:b0.cx+dx,cy:b0.cy+dy},q=snapBox(b,new Set(drag.items.map(o=>o.it)));dx+=q.dx;dy+=q.dy;GUIDES=q.g}else GUIDES=[];
+    drag.items.forEach(o=>{o.it.cx=o.cx+dx;o.it.cy=o.cy+dy});draw();syncInsp();return}
+  const it=drag.it;
+  if(drag.m==='mv'){let nx=drag.cx+mx-drag.mx,ny=drag.cy+my-drag.my;
+    if(snapOn()&&!e.altKey){const r=snapMove(it,nx,ny);nx=r.x;ny=r.y;GUIDES=r.g}else GUIDES=[];it.cx=nx;it.cy=ny}
+  else if(drag.m==='rot'){let a=Math.atan2(py-drag.c[1],px-drag.c[0])*180/Math.PI+90;if(e.shiftKey)a=Math.round(a/15)*15;it.rot=Math.round(((a%360)+540)%360-180)}
+  else{it.scale=Math.max(.02,Math.min(80,drag.s0*Math.hypot(px-drag.c[0],py-drag.c[1])/drag.d0))}
+  draw();syncInsp()});
+cvEl.addEventListener('pointerup',()=>{if(!drag)return;
+  if(drag.m==='pan'){const d=drag;drag=null;$('#stage').classList.remove('grab');if(!d.moved&&!d.keep)select(null);return}
+  if(drag.m==='box'){const d=drag,m=MARQ;drag=null;MARQ=null;
+    if(!d.moved){if(d.hit){if(d.add){const n=new Set(d.base);n.has(d.hit.id)?n.delete(d.hit.id):n.add(d.hit.id);selectMany([...n])}else select(d.hit)}else if(!d.add)select(null);else draw();return}
+    const[ax,ay]=stage.mm(Math.min(m.x0,m.x1),Math.min(m.y0,m.y1)),[bx,by]=stage.mm(Math.max(m.x0,m.x1),Math.max(m.y0,m.y1));
+    const ids=ITEMS.filter(i=>{if(!i.vis)return false;const b=bboxOf(i);return b.R>=ax&&b.L<=bx&&b.B>=ay&&b.T<=by}).map(i=>i.id);
+    selectMany(d.add?[...new Set([...d.base,...ids])]:ids);return}
+  if(drag.m==='mvm'){const moved=drag.moved;drag=null;GUIDES=[];if(moved)commit(true);syncInsp();updInfo();draw();return}
+  const it=drag.it,m=drag.m,moved=drag.moved;drag=null;GUIDES=[];if(moved)commit(true);
+  if(m==='sc')bakeScale(it);
+  syncInsp();updInfo();draw()});
+/* la taille d’un texte / d’une image est portée par ses réglages ; les autres objets gardent un facteur d’échelle */
+function bakeScale(it){
+  const k=it.scale;
+  if(it.type==='text'){it.p.size=+Math.max(1,Math.min(80,it.p.size*k)).toFixed(2);it.w*=k;it.h*=k;it.scale=1;renderInsp();vectorize(it)}
+  else if(it.type==='image'){it.p.width=+Math.max(5,Math.min(400,it.p.width*k)).toFixed(1);it.w*=k;it.h*=k;it.scale=1;renderInsp();vectorize(it)}}
+/* ───── barre d’outils du Composer (icônes) ───── */
+const ICO=p=>`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const IC={
+  select:ICO('<path d="M4 2.2l8.2 5.6-3.7.9 2.1 4-1.8.9-2.1-4-2.7 2.4z"/>'),
+  marquee:ICO('<rect x="2.2" y="3" width="11.6" height="10" rx="1" stroke-dasharray="2.4 2"/>'),
+  hand:ICO('<path d="M8 1.8v12.4M1.8 8h12.4M8 1.8L6.3 3.5M8 1.8l1.7 1.7M8 14.2l-1.7-1.7M8 14.2l1.7-1.7M1.8 8l1.7-1.7M1.8 8l1.7 1.7M14.2 8l-1.7-1.7M14.2 8l-1.7 1.7"/>'),
+  rotl:ICO('<path d="M2.8 6.6A5.4 5.4 0 1 1 3 10.4"/><path d="M2.6 2.6v4h4"/>'),
+  rotr:ICO('<g transform="matrix(-1 0 0 1 16 0)"><path d="M2.8 6.6A5.4 5.4 0 1 1 3 10.4"/><path d="M2.6 2.6v4h4"/></g>'),
+  smaller:ICO('<path d="M13.5 6.5h-4v-4M9.5 6.5l4.2-4.2M2.5 9.5h4v4M6.5 9.5l-4.2 4.2"/>'),
+  bigger:ICO('<path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9"/>'),
+  fit:ICO('<path d="M5 2.5H2.5V5M11 2.5h2.5V5M5 13.5H2.5V11M11 13.5h2.5V11"/><rect x="5.6" y="5.6" width="4.8" height="4.8" rx=".6"/>'),
+  align:ICO('<path d="M2.5 2v12"/><rect x="5" y="3.6" width="8.5" height="3" rx=".6"/><rect x="5" y="9.4" width="5.5" height="3" rx=".6"/>'),
+  l:ICO('<path d="M2.5 2v12"/><rect x="5" y="3.6" width="8.5" height="3" rx=".6"/><rect x="5" y="9.4" width="5.5" height="3" rx=".6"/>'),
+  c:ICO('<path d="M8 2v12"/><rect x="3" y="3.6" width="10" height="3" rx=".6"/><rect x="4.5" y="9.4" width="7" height="3" rx=".6"/>'),
+  r:ICO('<path d="M13.5 2v12"/><rect x="2.5" y="3.6" width="8.5" height="3" rx=".6"/><rect x="5.5" y="9.4" width="5.5" height="3" rx=".6"/>'),
+  t:ICO('<path d="M2 2.5h12"/><rect x="3.6" y="5" width="3" height="8.5" rx=".6"/><rect x="9.4" y="5" width="3" height="5.5" rx=".6"/>'),
+  m:ICO('<path d="M2 8h12"/><rect x="3.6" y="2.5" width="3" height="11" rx=".6"/><rect x="9.4" y="4.5" width="3" height="7" rx=".6"/>'),
+  b:ICO('<path d="M2 13.5h12"/><rect x="3.6" y="2.5" width="3" height="8.5" rx=".6"/><rect x="9.4" y="5.5" width="3" height="5.5" rx=".6"/>'),
+  center:ICO('<circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v3M8 11.2v3M1.8 8h3M11.2 8h3"/>')};
+const TB_DEF=[['tool','select','Sélection : cliquer, déplacer, poignées  ( V )'],['tool','marquee','Cadre de sélection : trace un rectangle autour des objets (Maj + clic = plusieurs objets)  ( M )'],['tool','hand','Déplacer la vue  ( H, ou garder Espace enfoncée )'],'|',
+  ['act','rotl','Tourner de 90° vers la gauche  ( [ )'],['act','rotr','Tourner de 90° vers la droite  ( ] )'],'|',
+  ['act','smaller','Réduire de 10 %'],['act','bigger','Agrandir de 10 %'],['act','fit','Adapter à la feuille (dans les marges)'],'|',
+  ['act','align','Aligner sur la feuille…'],['act','center','Centrer sur la feuille']];
+var TB=null,tbKey='';
+function norm180(a){return Math.round((((a%360)+540)%360-180)*100)/100}
+function rotSel(deg){const L=selAll();if(!L.length)return;const b=groupBox(L),c=Math.cos(deg*Math.PI/180),s=Math.sin(deg*Math.PI/180);
+  for(const it of L){if(L.length>1){const dx=it.cx-b.cx,dy=it.cy-b.cy;it.cx=b.cx+dx*c-dy*s;it.cy=b.cy+dx*s+dy*c}it.rot=norm180(it.rot+deg)}
+  draw();syncInsp();commit(true)}
+function scaleSel(f){const L=selAll();if(!L.length)return;const b=groupBox(L);
+  for(const it of L){it.cx=b.cx+(it.cx-b.cx)*f;it.cy=b.cy+(it.cy-b.cy)*f;it.scale=Math.max(.02,Math.min(80,it.scale*f))}
+  draw();syncInsp();commit(true);for(const it of L)bakeScale(it)}
+async function fitSel(){const L=selAll();if(!L.length)return;const[pw,ph]=paperDims(),mg=CFG.margin||0;
+  for(let n=0;n<3;n++){const b=groupBox(L),f=Math.min((pw-2*mg)/Math.max(b.R-b.L,1e-6),(ph-2*mg)/Math.max(b.B-b.T,1e-6));
+    if(!isFinite(f)||f<=0)return;if(n&&Math.abs(f-1)<.004)break;
+    scaleSel(f);await new Promise(r=>setTimeout(r,40));for(let i=0;i<80&&L.some(x=>x.busy);i++)await new Promise(r=>setTimeout(r,60))}   // un texte se recalcule après la mise à l’échelle : on affine
+  const g=groupBox(L);L.forEach(i=>{i.cx+=pw/2-g.cx;i.cy+=ph/2-g.cy});draw();syncInsp();commit(true)}
+function setTool(t){TOOL=t;MARQ=null;$('#stage').dataset.tool=curTool();updTbar();draw()}
+function closePop(){const p=document.querySelector('#stage>.tpop');p&&p.classList.remove('on')}
+function buildToolbar(){const box=$('#stage'),d=document.createElement('div');d.className='zoomctl tbar';
+  d.innerHTML=TB_DEF.map(t=>t==='|'?'<i class="tsep"></i>':`<button data-${t[0]}="${t[1]}" title="${esc(t[2])}" aria-label="${esc(t[2])}">${IC[t[1]]}</button>`).join('')+
+    '';
+  const pop=document.createElement('div');pop.className='tpop';
+  pop.innerHTML=['l','c','r','t','m','b'].map((k,i)=>`<button data-al="${k}" title="${['À gauche (marge)','Centré horizontalement','À droite (marge)','En haut (marge)','Centré verticalement','En bas (marge)'][i]}">${IC[k]}</button>`).join('');
+  box.append(d,pop);TB=d;
+  if(stage.zoomEl)d.append(stage.zoomEl);          // le zoom rejoint le rail, en bas
+  stage.rr=52;new ResizeObserver(()=>{const r=TB.offsetWidth+18;if(Math.abs(r-stage.rr)>1){stage.rr=r;stage.fit()}}).observe(TB);
+  d.addEventListener('pointerdown',e=>e.stopPropagation());
+  d.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.blur();
+    if(b.dataset.tool){closePop();setTool(b.dataset.tool);return}
+    if(b.dataset.al)return;
+    const a=b.dataset.act;if(a!=='align')closePop();
+    if(a==='rotl')rotSel(-90);else if(a==='rotr')rotSel(90);else if(a==='smaller')scaleSel(1/1.1);else if(a==='bigger')scaleSel(1.1);else if(a==='fit')fitSel();
+    else if(a==='center')alignSel('o');
+    else if(a==='align'){const br=b.getBoundingClientRect(),sr=box.getBoundingClientRect();pop.style.right=(sr.right-br.left+6)+'px';pop.style.top=(br.top-sr.top-4)+'px';pop.classList.toggle('on')}});
+  pop.addEventListener('pointerdown',e=>e.stopPropagation());
+  pop.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.dataset.al){b.blur();closePop();alignSel(b.dataset.al)}});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.tpop')&&!e.target.closest('[data-act=align]'))closePop()},true);
+  updTbar()}
+function updTbar(){if(!TB)return;const n=selAll().length,t=curTool(),key=t+'|'+n+'|'+TOOL;if(key===tbKey)return;tbKey=key;
+  TB.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
+  TB.querySelectorAll('[data-act]').forEach(b=>b.disabled=!n);if(!n)closePop()}
+buildToolbar();
+window.addEventListener('keydown',e=>{
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if((e.metaKey||e.ctrlKey)&&!typing&&curTab()==='compose'&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();(e.key.toLowerCase()==='y'||e.shiftKey)?redo():undo();return}
+  if(!typing&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&['compose','gcode'].includes(curTab())){const st=curTab()==='compose'?stage:gstage;
+    if(e.key==='+'||e.key==='=')st.zin&&st.zin();else if(e.key==='-'||e.key==='_')st.zout&&st.zout();else if(e.key==='0')st.reset();else if((e.key==='f'||e.key==='F')&&st===stage&&SELS.size)st.zsel&&st.zsel();
+    else if(st===stage){const k=e.key.toLowerCase();if(k==='v')setTool('select');else if(k==='m')setTool('marquee');else if(k==='h')setTool('hand');else if(e.key==='['){e.preventDefault();rotSel(-90)}else if(e.key===']'){e.preventDefault();rotSel(90)}}}
+  if(curTab()==='compose'&&!typing&&SELS.size&&(e.key==='Delete'||e.key==='Backspace')){e.preventDefault();delSel()}
+  if(curTab()==='compose'&&!typing&&!e.altKey&&(e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='a'){e.preventDefault();selectMany(ITEMS.filter(i=>i.vis).map(i=>i.id))}
+  if(curTab()==='compose'&&!typing&&e.key==='Escape'&&(SELS.size||TOOL!=='select')){setTool('select');select(null)}
+  if(curTab()==='compose'&&!typing&&e.key===' '&&!SPACE&&document.activeElement===document.body&&!document.querySelector('#modal.on')){e.preventDefault();SPACE=true;$('#stage').dataset.tool='hand';updTbar()}
+  if(curTab()==='compose'&&!typing&&SELS.size&&e.key.startsWith('Arrow')){e.preventDefault();const d=e.shiftKey?10:1;
+    for(const it of selAll()){if(e.key==='ArrowLeft')it.cx-=d;if(e.key==='ArrowRight')it.cx+=d;if(e.key==='ArrowUp')it.cy-=d;if(e.key==='ArrowDown')it.cy+=d}draw();syncInsp();commit()}
+  if(curTab()==='control'&&!typing&&e.key.startsWith('Arrow')){e.preventDefault();const d=step*(e.shiftKey?10:1);
+    const v={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];jog(v[0]*d,v[1]*d)}});
+window.addEventListener('keyup',e=>{if(e.key===' '&&SPACE){SPACE=false;$('#stage').dataset.tool=TOOL;updTbar()}});
+window.addEventListener('blur',()=>{if(SPACE){SPACE=false;$('#stage').dataset.tool=TOOL}});
+function delItem(it){ITEMS=ITEMS.filter(i=>i!==it);select(null);updInfo();commit(true)}
+function delSel(){const L=new Set(selAll());if(!L.size)return;ITEMS=ITEMS.filter(i=>!L.has(i));select(null);updInfo();commit(true)}
+
+/* ───── liste + inspecteur ───── */
+function renderItems(){const box=$('#items');box.innerHTML='';$('#noitems').style.display=ITEMS.length?'none':'';
+  [...ITEMS].reverse().forEach(it=>{const d=document.createElement('div');d.className='it'+(SELS.has(it.id)?' sel':'')+(outside(it)?' out':'');
+    d.innerHTML=`<input type=checkbox ${it.vis?'checked':''} title="Afficher / tracer"><span class=ty>${TYPE_LABEL[it.type]}</span><i class=pd style="background:${(PENS()[it.pen||0]||PENS()[0]).color}" title="${esc((PENS()[it.pen||0]||PENS()[0]).name)}"></i><span class=nm>${esc(it.name)}</span><button class="ghost" title="Monter">↑</button><button class="ghost" title="Descendre">↓</button>`;
+    const[cb,,,,up,dn]=[...d.children];
+    cb.onclick=e=>{e.stopPropagation();it.vis=cb.checked;draw();updInfo();commit(true)};
+    up.onclick=e=>{e.stopPropagation();mv(it,1)};dn.onclick=e=>{e.stopPropagation();mv(it,-1)};
+    d.onclick=e=>{if(e.shiftKey||e.metaKey||e.ctrlKey){const n=new Set(SELS);n.has(it.id)?n.delete(it.id):n.add(it.id);selectMany([...n])}else select(it)};box.append(d)})}
+function mv(it,dir){const i=ITEMS.indexOf(it),j=i+dir;if(j<0||j>=ITEMS.length)return;[ITEMS[i],ITEMS[j]]=[ITEMS[j],ITEMS[i]];renderItems();updInfo();commit(true)}
+const num=(k,l,o={})=>`<div class=row><label>${l}</label><input type=number data-k="${k}" data-t=num ${o.min!=null?`min=${o.min}`:''} ${o.max!=null?`max=${o.max}`:''} step="${o.step||1}">${o.u?`<span class=hint>${o.u}</span>`:''}</div>`;
+const rng=(k,l,mn,mx,st)=>`<div class=row><label>${l}</label><input type=range data-k="${k}" data-t=num min=${mn} max=${mx} step=${st} style="flex:1"><input type=number data-k="${k}" data-t=num step=${st} style="width:64px"></div>`;
+const selc=(k,l,opts)=>`<div class=row><label>${l}</label><select data-k="${k}">${opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></div>`;
+function renderInsp(){const it=sel(),box=$('#insp');
+  if(!it&&SELS.size>1){box.style.display='';box.innerHTML=`<h3>${SELS.size} objets sélectionnés</h3><div class=hint>Glisse l’un d’eux pour les déplacer ensemble. Les icônes du bord droit de la feuille les tournent, les agrandissent ou les alignent comme un seul bloc. Maj + clic ajoute ou retire un objet.</div><div class=row><button class=sec id=delm style="color:var(--err)">Supprimer la sélection</button></div>`;box.querySelector('#delm').onclick=delSel;return}
+  if(!it){box.style.display='none';return}box.style.display='';
+  let h=`<h3>${TYPE_LABEL[it.type]} — réglages</h3>
+    <div class=row><label>Stylo</label><select data-k=pen data-t=num data-top=1>${PENS().map((p,i)=>`<option value=${i}>${esc(p.name)}</option>`).join('')}</select><i class=pd style="background:${(PENS()[it.pen||0]||PENS()[0]).color};width:14px;height:14px"></i></div>`;
+  if(it.type==='text'){
+    const groups={};FONTS.forEach(f=>(groups[f.group]=groups[f.group]||[]).push(f));
+    h+=`<textarea data-k="text" rows=4 spellcheck=false></textarea>
+    <div class=row><label>Police</label><select data-k="font" style="flex:1;max-width:200px">${Object.entries(groups).map(([g,fs])=>`<optgroup label="${esc(g)}">${fs.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+    ${num('size','Hauteur lettres',{min:1,max:80,step:.5,u:'mm'})}${rng('line_spacing','Interligne',1,4,.1)}${rng('letter_spacing','Espacement',-2,10,.1)}
+    ${selc('align','Alignement',[['left','Gauche'],['center','Centré'],['right','Droite']])}${rng('slant','Inclinaison °',-30,30,1)}${rng('jitter','Irrégularité',0,2,.1)}${rng('wobble','Ondulation',0,2,.1)}${rng('word_spacing','Espace des mots',-3,12,.5)}${rng('smooth','Lissage des traits',0,2,1)}
+    ${num('max_width','Largeur max',{min:0,max:400,step:5,u:'mm (0 = libre)'})}
+    <div class=row id=sysmode style="display:none"><label>Tracé police</label><select data-k="trace"><option value=skeleton>Ligne centrale</option><option value=contour>Contours</option><option value=hatch>Hachures</option></select></div>
+    <div class=row><button class=sec id=reseed>Nouveau tirage manuscrit</button></div><div class=hint id=missing></div>`}
+  if(it.type==='svg')h+=`${selc('fill','Remplissage',[['none','Contours seulement'],['hatch','Hachurer les formes remplies']])}
+    <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
+    <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
+    <div class=row><label>Échelle %</label><input type=range data-k=scalepct data-t=num min=5 max=400 step=1 style="flex:1"><input type=number data-k=scalepct data-t=num style="width:64px"></div><div class=hint id=svgnotes></div>`;
+  if(it.type==='image'){h+=`${selc('mode','Mode',[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']])}
+    <div class=row><label>Seuil noir/blanc</label><input type=range data-k=threshold data-t=num min=1 max=254 step=1 style="flex:1"><input type=number data-k=threshold data-t=num style="width:64px"></div>
+    <div class=row><label></label><button class=sec id=auto>Seuil auto</button><label class=hint style="width:auto"><input type=checkbox data-k=invert data-t=chk> inverser</label></div>
+    ${num('width','Largeur',{min:5,max:400,step:1,u:'mm'})}
+    <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
+    <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
+    <div class=row data-tone><label>Niveaux de gris</label><input type=range data-k=levels data-t=num min=2 max=5 step=1 style="flex:1"><input type=number data-k=levels data-t=num style="width:64px"></div>
+    ${num('min_blob','Ignorer taches <',{min:0,max:10,step:.1,u:'mm'})}${rng('smooth','Lissage',0,3,.1)}
+    <div class=row><label></label><label class=hint style="width:auto"><input type=checkbox data-k=show data-t=chk> voir l'image sous les tracés</label></div>`}
+  if(it.type==='shape'){const sc=LIB.gens[it.p.gen];h+=sc?sc.params.map(q=>num(q.k,q.label,{min:q.min,max:q.max,step:q.step,u:q.unit})).join(''):`<div class=hint>Dessin de la bibliothèque : taille et rotation libres.</div>`}
+  h+=`<h3 style="margin-top:12px">Position</h3>
+    <div class=row><label>Centre X / Y</label><input type=number data-k=cx data-t=num data-top=1 step=1><input type=number data-k=cy data-t=num data-top=1 step=1><span class=hint>mm</span></div>
+    <div class=row><label>Rotation</label><input type=range data-k=rot data-t=num data-top=1 min=-180 max=180 step=1 style="flex:1"><input type=number data-k=rot data-t=num data-top=1 style="width:64px"></div>
+    <div class=row><label>Aligner</label><button class="sec al" data-al=l title="Bord gauche (marge)">⇤</button><button class="sec al" data-al=c title="Centrer horizontalement">↔</button><button class="sec al" data-al=r title="Bord droit (marge)">⇥</button><button class="sec al" data-al=t title="Haut (marge)">⤒</button><button class="sec al" data-al=m title="Centrer verticalement">↕</button><button class="sec al" data-al=b title="Bas (marge)">⤓</button></div>
+    <div class=row><button class=sec id=ctr>Centrer sur le papier</button><button class=sec id=dup>Dupliquer</button><button class=sec id=rep>Répéter…</button><button class=sec id=tolib title="Enregistre cet objet dans la bibliothèque">＋ Bibliothèque</button><button class=sec id=del style="color:var(--err)">Supprimer</button></div>
+    <div class=hint id=iinfo></div>`;
+  box.innerHTML=h;syncInsp();
+  box.querySelectorAll('[data-k]').forEach(el=>{el.oninput=el.onchange=()=>onField(el)});
+  const q=s=>box.querySelector(s);
+  q('#ctr').onclick=()=>{const[cx,cy]=paperCenter();it.cx=cx;it.cy=cy;draw();syncInsp();commit(true)};
+  box.querySelectorAll('.al').forEach(b=>b.onclick=()=>alignSel(b.dataset.al));
+  q('#del').onclick=()=>delItem(it);
+  q('#rep').onclick=()=>act(()=>repeatItem(it));q('#tolib').onclick=()=>act(()=>saveToLibrary(it));
+  q('#dup').onclick=()=>{const c=newItem(it.type,{name:it.name,uploadId:it.uploadId,img:it.img,ar:it.ar,otsu:it.otsu,src:it.src,pen:it.pen||0,p:{...it.p},cx:it.cx+8,cy:it.cy+8,rot:it.rot,scale:it.scale,paths:it.paths,w:it.w,h:it.h,meta:it.meta},true);
+    c.path2d=it.path2d;c.len=it.len;c.baseW=it.baseW;select(c);commit(true)};
+  if(q('#reseed'))q('#reseed').onclick=()=>{it.p.seed=1+Math.floor(Math.random()*9999);vectorize(it);commit()};
+  if(q('#auto'))q('#auto').onclick=()=>{it.p.threshold=it.otsu||128;syncInsp();vectorize(it)}}
+const REVEC=new Set(['text','font','size','line_spacing','letter_spacing','align','slant','jitter','max_width','trace','word_spacing','wobble','fill','levels','mode','threshold','invert','width','hatch','angle','min_blob','smooth']);
+function onField(el){const it=sel();if(!it)return;const k=el.dataset.k;
+  let v=el.dataset.t==='num'?parseFloat(el.value):el.dataset.t==='chk'?el.checked:el.value;
+  if(el.dataset.t==='num'&&!isFinite(v))return;
+  if(k==='scalepct')it.scale=v/100;else if(el.dataset.top)it[k]=v;else it.p[k]=v;
+  if(k==='mode'&&v==='tone'){it.p.threshold=190;it.p.hatch=Math.max(it.p.hatch||0,.7);it.p.smooth=Math.max(it.p.smooth||0,1)}
+  if(k==='font')saveUI('font',v);if(k==='size')saveUI('size',v);
+  syncInsp(el);if((REVEC.has(k)||it.type==='shape')&&!el.dataset.top)schedule(it,k==='text'?350:250);else{draw();if(k==='pen'){renderItems();renderInsp()}}updInfo();commit()}
+function syncInsp(except){const it=sel(),box=$('#insp');if(!it||box.style.display==='none')return;
+  box.querySelectorAll('[data-k]').forEach(el=>{if(el===except)return;const k=el.dataset.k;
+    let v=k==='scalepct'?Math.round(it.scale*100):el.dataset.top?it[k]:it.p[k];if(v===undefined)return;
+    if(el.type==='checkbox')el.checked=!!v;else if(el.dataset.t==='num'&&typeof v==='number')el.value=+(+v).toFixed(2);else el.value=v});
+  const sm=box.querySelector('#sysmode');if(sm)sm.style.display=(it.p.font||'').startsWith('sys:')?'':'none';
+  box.querySelectorAll('[data-hatch]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both'||it.p.mode==='tone'||it.p.fill==='hatch')?'':'none');
+  box.querySelectorAll('[data-tone]').forEach(r=>r.style.display=it.p.mode==='tone'?'':'none');
+  updInfo()}
+function updInfo(){const it=sel(),box=$('#insp');
+  if(it&&box.style.display!=='none'){const i=box.querySelector('#iinfo');
+    if(i)i.textContent=`${it.busy?'Calcul… · ':''}${it.meta?it.meta.n+' tracés · ':''}${(it.w*it.scale).toFixed(1)} × ${(it.h*it.scale).toFixed(1)} mm`+(outside(it)?' · HORS ZONE':'');
+    const ms=box.querySelector('#missing');if(ms)ms.textContent=it.meta&&it.meta.missing&&it.meta.missing.length?'Caractères non disponibles : '+it.meta.missing.join(' '):'';
+    const sn=box.querySelector('#svgnotes');if(sn)sn.textContent=it.meta&&it.meta.notes?it.meta.notes.join(' · '):''}
+  const vis=ITEMS.filter(i=>i.vis);let L=0,n=0;vis.forEach(i=>{L+=i.len*i.scale;n+=i.meta?i.meta.n:0});
+  let t=L/Math.max(1,CFG.draw_feed)*60+n*2*(CFG.pen_settle_ms||300)/1000+L*.3/Math.max(1,CFG.travel_feed)*60;
+  const pi=penInfo(),sg=estSig();
+  if(EST.sig===sg&&EST.sec)t=EST.sec;else estimateSoon();
+  $('#sumtxt').textContent=vis.length?`${vis.length} objet${vis.length>1?'s':''} · ${n} tracés · ${(L/1000).toFixed(2)} m · ≈ ${fmtT(t)}`+(pi.used.length>1?` · ${pi.used.length} stylos`:''):'';
+  const bad=vis.some(outside);$('#sumtxt').style.color=bad?'var(--err)':'';$('#sumtxt').title=EST.info||'';if(bad)$('#sumtxt').textContent+=' · HORS ZONE';
+  renderItemsClasses()}
+function renderItemsClasses(){$$('#items .it').forEach((d,i)=>{const it=[...ITEMS].reverse()[i];if(it)d.classList.toggle('out',outside(it))})}
+
+/* ───── génération / tracé ───── */
+function groups(){return ITEMS.filter(i=>i.vis&&i.paths.length).map(i=>({paths:finalPaths(i),pen:i.pen||0}))}
+function penInfo(){const used=[...new Set(ITEMS.filter(i=>i.vis&&i.paths.length).map(i=>i.pen||0))].sort((a,b)=>a-b);return{used,names:used.map(i=>(PENS()[i]||PENS()[0]).name)}}
+function curGroupsOrWarn(){const g=groups();if(!g.length){toast('Rien à tracer : ajoute et affiche un objet.',true);return null}if(ITEMS.some(i=>i.busy)){toast('Calcul en cours, réessaie dans un instant.',true);return null}return g}
+function clearTrail(){TRAIL=[];updTrailBtn();draw()}
+function updTrailBtn(){const b=$('#bclrtrail');if(b)b.disabled=!TRAIL.some(t=>t.pen&&t.p.length>1)}
+$('#bclrtrail').onclick=clearTrail;
+$('#bnewsheet').onclick=async()=>{
+  if(ST.job&&ST.job.running){toast('Un tracé est en cours : arrête-le d\'abord.');return}
+  const has=ITEMS.length>0;
+  if(has&&!await ask('Nouvelle feuille',`<p>Efface le tracé affiché et retire les ${ITEMS.length} élément(s) de la composition.</p><p>Pense à poser la nouvelle feuille puis à redéfinir le zéro.</p>`,'Nouvelle feuille'))return;
+  ITEMS=[];select(null);clearTrail();updInfo();commit(true)};
+$('#bpreview').onclick=()=>act(async()=>{const g=curGroupsOrWarn();if(!g)return;const r=await api('/gcode/build',{groups:g,name:'Composition'});setGcode(r.gcode,'VG-X4.gcode');tab('gcode')});
+async function startRun(body,label,opt={}){
+  if(!ST.connected){toast('Connecte la machine (ou lance la Simulation) d’abord.',true);return}
+  if(ST.job&&ST.job.running){toast('Un tracé est déjà en cours.',true);return}
+  const zero=ST.zero_set?'':`<p style="color:var(--warn)">⚠ Aucun point zéro défini depuis cette connexion.</p>`;
+  const ok=opt.noConfirm?true:await ask('Lancer le tracé ?',`${zero}<p>Vérifie que le papier est fixé et que le stylo est posé sur le <b>coin haut-gauche</b> (point zéro).${ST.sim?'<br><i>Mode simulation : rien ne bouge réellement.</i>':''}</p>${label||''}`,'▶ Tracer');
+  if(!ok)return;
+  try{await api('/run',body);return true}catch(e){
+    if(/Hors zone/.test(e.message)){if(await ask('Hors de la zone',`<p>${esc(e.message)}</p><p>Tracer quand même ? (risque de buter en fin de course)</p>`,'Tracer quand même')){await act(()=>api('/run',{...body,force:true}));return true}}
+    else toast(e.message,true)}
+  return false}
+$('#brun').onclick=()=>{const g=curGroupsOrWarn();if(!g)return;{const pi=penInfo();startRun({groups:g,name:'Composition'},`<p class=hint>${$('#sumtxt').textContent}</p>`+(pi.used.length>1?`<p>🖊 Stylos, dans l’ordre : <b>${pi.names.map(esc).join(' → ')}</b>. Le tracé s’arrêtera pour que tu changes le feutre (${pi.used.length-1} changement${pi.used.length>2?'s':''}). Commence avec le premier stylo.</p>`:''))}};
+
+/* ───── onglet G-code ───── */
+let GA=null,gT;
+function setGcode(t,name){$('#gtext').value=t;$('#gname').textContent=name||'';analyzeG()}
+$('#gtext').oninput=()=>{clearTimeout(gT);gT=setTimeout(analyzeG,400)};
+async function analyzeG(){const t=$('#gtext').value;if(!t.trim()){GA=null;gdraw();$('#gstats').textContent='';$('#gwarn').innerHTML='';return}
+  try{GA=await api('/gcode/analyze',{text:t})}catch(e){toast(e.message,true);return}
+  const b=GA.bbox;$('#gstats').textContent=`${t.split('\n').length} lignes · durée ≈ ${fmtT(GA.seconds)}`+(b?` · ${(b[2]-b[0]).toFixed(0)}×${(b[3]-b[1]).toFixed(0)} mm`:'');
+  $('#gwarn').innerHTML=GA.warnings.map((w,i)=>`<div class="warnl ${i===0&&GA.out_of_bounds?'bad':''}">⚠ ${esc(w)}</div>`).join('');gdraw()}
+function gdraw(){if(curTab()!=='gcode'||!gstage.d)return;const c=gstage.base();
+  if(GA){c.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--ink');c.lineWidth=Math.max(1,.45*gstage.k);c.lineJoin=c.lineCap='round';c.beginPath();
+    for(const p of GA.preview){const[x,y]=gstage.px(p[0][0],p[0][1]);c.moveTo(x,y);for(let i=1;i<p.length;i++)c.lineTo(...gstage.px(p[i][0],p[i][1]))}c.stroke()}
+  gstage.pen(c)}
+$('#gopen').onclick=()=>pick('.gcode,.gco,.gc,.nc,.ngc,.txt,.tap,text/plain');
+$('#gsave').onclick=()=>act(async()=>{const t=$('#gtext').value;if(!t.trim())return;const n=($('#gname').textContent||'VG-X4.gcode').replace(/[^\w.\- ]/g,'_');
+  if(window.pywebview&&pywebview.api){const p=await pywebview.api.save_text(n,t);if(p)toast('Enregistré : '+p)}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=n;a.click()}});
+$('#grun').onclick=()=>{const t=$('#gtext').value;if(!t.trim()){toast('G-code vide.',true);return}
+  startRun({gcode:t,name:$('#gname').textContent||'G-code',force:$('#gforce').checked},`<p class=hint>${$('#gstats').textContent}</p>`)};
+const gd=$('#gdrop');['dragenter','dragover'].forEach(e=>gd.addEventListener(e,ev=>{ev.preventDefault();gd.classList.add('over')}));
+['dragleave','drop'].forEach(e=>gd.addEventListener(e,ev=>{ev.preventDefault();gd.classList.remove('over')}));
+gd.onclick=()=>$('#gopen').click();
+
+/* ───── glisser-déposer global ───── */
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].forEach(f=>act(()=>loadFile(f)))});
+
+/* ───── connexion ───── */
+let PORTS=[];
+async function loadPorts(){try{PORTS=(await api('/ports')).ports}catch(e){return}
+  const s=$('#port'),cur=s.value||CFG.port;s.innerHTML='';
+  PORTS.forEach(p=>{const o=document.createElement('option');o.value=p.device;o.textContent=(p.likely?'★ ':'')+p.device.replace('/dev/','')+(p.desc&&p.desc!=='n/a'?' — '+p.desc:'');s.append(o)});
+  if(!PORTS.length){const o=document.createElement('option');o.textContent='Aucun port détecté';o.value='';s.append(o)}
+  s.value=PORTS.some(p=>p.device===cur)?cur:(PORTS.find(p=>p.likely)||PORTS[0]||{}).device||''}
+$('#refresh').onclick=loadPorts;
+$('#bconn').onclick=()=>act(async()=>{
+  if(ST.connected&&!ST.sim){await api('/disconnect',{});return}
+  if(ST.connected&&ST.sim){await api('/disconnect',{})}
+  const p=$('#port').value;if(!p){toast('Aucun port série : branche la VG-X4 en USB, ou utilise la Simulation.',true);return}
+  $('#bconn').disabled=true;$('#bconn').textContent='Connexion…';
+  try{await api('/connect',{port:p,baud:CFG.baud})}finally{$('#bconn').disabled=false}});
+$('#bsim').onclick=()=>act(async()=>{if(ST.connected&&ST.sim){await api('/disconnect',{});return}await api('/connect',{sim:true})});
+$('#bpause').onclick=()=>act(()=>api(ST.job.paused?'/resume':'/pause',{}));
+$('#bstop').onclick=()=>act(()=>api('/reset',{}));
+$('#bunlock').onclick=()=>act(()=>api('/unlock',{}));
+$('#bcont').onclick=()=>act(()=>api('/job/continue',{}));
+$('#bforget').onclick=()=>act(()=>api('/job/forget',{}));
+$('#bresume').onclick=async()=>{const r=ST.resume;if(!r)return;
+  const ok=await ask('Reprendre le tracé',`<p>Le tracé « ${esc(r.name)} » s’est arrêté. L’app propose de repartir du <b>trait ${r.path}</b> sur ${r.npaths} (le trait interrompu est retracé en entier).</p>
+    <div class=row><label style="width:auto">Reprendre au trait n°</label><input type=number id=rn value=${r.path} min=1 max=${r.npaths}></div>
+    ${r.zero_ok?'<p class=hint>Le point zéro est conservé : si le papier n’a pas bougé, tout est prêt. Vérifie que le stylo est bien monté.</p>':'<p style="color:var(--warn)">⚠ Le zéro n’est plus connu : redéfinis-le d’abord (stylo à l’origine du papier), sinon la reprise sera refusée.</p>'}`,'↻ Reprendre');
+  if(ok)await act(()=>api('/job/resume',{path:+$('#rn').value||r.path}))};
+
+/* ───── état ───── */
+let lastW='',TRAIL=[],lastReach='';
+function applyState(s){const was=ST;ST=s;const j=s.job||{};
+  const dot=$('#dot');dot.className='dot'+(s.connected?(/Alarm/.test(s.state)?' err':(j.running||/Run|Hold/.test(s.state))?' run':' ok'):'');
+  $('#stxt').textContent=s.connected?`${s.sim?'Simulation':'Connecté'} · ${s.state}`:'Déconnecté';
+  $('#bconn').textContent=s.connected&&!s.sim?'Déconnecter':'Connecter';$('#bsim').textContent=s.connected&&s.sim?'Arrêter la simulation':'Simulation';
+  $('#port').disabled=s.connected&&!s.sim;
+  const run=!!j.running;$('#bpause').style.display=run?'':'none';$('#bstop').style.display=s.connected?'':'none';
+  $('#bpause').textContent=j.paused?'▶ Reprendre':'⏸ Pause';
+  $('#hpos').innerHTML=s.connected?`X <b>${s.wpos[0].toFixed(2)}</b> Y <b>${s.wpos[1].toFixed(2)}</b> · stylo <b>${s.spindle>0?'baissé':'levé'}</b>`:'';
+  $('#cpos').textContent=`X ${s.wpos[0].toFixed(2)}  Y ${s.wpos[1].toFixed(2)}`;$('#mpos').textContent=`X ${s.mpos[0].toFixed(2)}  Y ${s.mpos[1].toFixed(2)}`;
+  const rk=JSON.stringify(s.reach||{});if(rk!==lastReach){lastReach=rk;if(curTab()==='compose')draw();updInfo()}
+  $('#limInfo').textContent=s.connected?((s.reach&&(s.reach.w||s.reach.h))?`Zone mesurée depuis ce zéro : ${s.reach.w?s.reach.w+' mm':'X non mesuré'} × ${s.reach.h?s.reach.h+' mm':'Y non mesuré'} (nominale ${CFG.area_w} × ${CFG.area_h}).`:`Non mesurée : zone nominale ${CFG.area_w} × ${CFG.area_h} mm.`):'';
+  $('#zeroinfo').textContent=s.connected?(s.zero_set?'✓ Zéro défini pendant cette session.':'Zéro non défini depuis la connexion.'):'';
+  // bandeau job
+  const jb=$('#jobbar');jb.classList.toggle('on',run||(j.state==='done'&&Date.now()/1000-j.done_at<8));
+  if(jb.classList.contains('on')){const f=j.total?j.sent/j.total:0;$('#jbar').style.width=(f*100)+'%';
+    $('#jtxt').textContent=run?`${j.waiting?'En attente (stylo)':j.paused?'En pause':'Tracé en cours'}${j.npaths&&j.path?` · trait ${j.path}/${j.npaths}`:''} — ${Math.round(f*100)} %`:'✓ Tracé terminé';
+    const left=run&&f>.02?j.elapsed/f-j.elapsed:0;$('#jeta').textContent=run?`écoulé ${fmtT(j.elapsed)}${left?` · reste ≈ ${fmtT(left)}`:''}`:''}
+  if(j.state==='error'&&was.job&&was.job.state!=='error')toast('Tracé interrompu : '+j.msg,true);
+  // bandeau : liaison perdue, alarme, changement de stylo, reprise, arrêt
+  const bn=$('#banner');let msg='',bk='';
+  if(!s.connected&&s.lost)msg='⚠ Liaison perdue avec la machine (câble ou alimentation). Reconnexion automatique dès qu’elle est de nouveau détectée…';
+  else if(s.connected&&/Alarm/.test(s.state))msg='⚠ Alarme GRBL'+(s.alarm?' : '+s.alarm:'')+' — débloque puis redéfinis le zéro.';
+  else if(s.connected&&j.waiting){msg='⏸ '+j.waiting+'. Remplace le feutre, puis clique Continuer.';bk='cont'}
+  else if(s.connected&&s.resume){const r=s.resume;msg=`Tracé « ${r.name} » interrompu — reprise possible au trait ${r.path}/${r.npaths}. `+(r.zero_ok?'Le point zéro est conservé.':'⚠ Position perdue : replace le stylo à l’origine du papier et redéfinis le zéro avant de reprendre.');bk='resume'}
+  else if(s.connected&&j.state==='stopped'&&!s.zero_set)msg='Tracé arrêté. Replace le stylo à l’origine et redéfinis le point zéro (Contrôle).';
+  bn.classList.toggle('on',!!msg);$('#btxt').textContent=msg;$('#bunlock').style.display=/Alarm/.test(s.state)?'':'none';
+  $('#bcont').style.display=bk==='cont'?'':'none';$('#bresume').style.display=bk==='resume'?'':'none';$('#bforget').style.display=bk==='resume'?'':'none';
+  if(j.waiting&&!(was.job&&was.job.waiting))toast('⏸ '+j.waiting);
+  if(s.connected&&!was.connected&&was.lost)toast('Reconnecté automatiquement. Redéfinis le point zéro.');
+  // activation des contrôles
+  const can=s.connected&&!run;$$('#s-control button').forEach(b=>{if(b.id!=='bsettings')b.disabled=!can});$('#bsend').disabled=!(s.connected&&!run);$('#bsettings').disabled=!can;
+  $('#brun').disabled=false;['dstart','calDraw','calCalc','prDraw'].forEach(id=>{const b=$('#'+id);if(b)b.disabled=!(s.connected&&!run)});
+  if(run&&!(was.job&&was.job.running)&&!j.resumed&&!/^(Alignement|Cadre|Essai)/.test(j.name||''))TRAIL=[];
+  if(run&&s.spindle>0){const l=TRAIL[TRAIL.length-1];if(!l||l.pen!==1){TRAIL.push({pen:1,p:[]})}TRAIL[TRAIL.length-1].p.push(s.wpos)}else if(TRAIL.length&&TRAIL[TRAIL.length-1].pen===1)TRAIL.push({pen:0,p:[]});updTrailBtn();
+  const wk=s.wpos.join();if(wk!==lastW||(was.spindle>0)!==(s.spindle>0)){lastW=wk;if(curTab()==='compose')draw();if(curTab()==='gcode')gdraw()}
+  // journal
+  if(s.log.length){const L=$('#log'),bot=L.scrollTop+L.clientHeight>=L.scrollHeight-20;
+    s.log.forEach(e=>{if(e.t<=lastLog)return;lastLog=Math.max(lastLog,e.t);const d=document.createElement('div');d.className=e.k;d.textContent=({tx:'› ',rx:'‹ ',err:'✖ ',warn:'⚠ ',info:'• '}[e.k]||'')+e.s;L.append(d)});
+    while(L.childElementCount>400)L.firstChild.remove();if(bot)L.scrollTop=L.scrollHeight}}
+let polling=false;
+setInterval(async()=>{if(polling)return;polling=true;try{applyState(await api('/state?after='+lastLog))}catch(e){}polling=false},250);
+setInterval(()=>{if(!ST.connected&&document.hasFocus())loadPorts()},4000);
+
+/* ───── contrôle manuel ───── */
+const jog=(dx,dy)=>act(()=>api('/jog',{dx,dy}));
+$$('[data-j]').forEach(b=>b.onclick=()=>{const[x,y]=b.dataset.j.split(',').map(Number);jog(x*step,y*step)});
+$('#jcenter').onclick=()=>act(()=>api('/goto',{x:0,y:0}));
+$('#bhome').onclick=()=>act(()=>api('/goto',{x:0,y:0}));
+$('#bgoto').onclick=()=>act(()=>api('/goto',{x:+$('#gx').value,y:+$('#gy').value}));
+$('#bzero').onclick=()=>act(async()=>{await api('/zero',{});clearTrail()});
+$('#bpup').onclick=()=>act(()=>api('/pen',{down:false}));$('#bpdn').onclick=()=>act(()=>api('/pen',{down:true}));
+$('#srange').oninput=()=>$('#snum').value=$('#srange').value;$('#snum').oninput=()=>$('#srange').value=$('#snum').value;
+$('#bstest').onclick=()=>act(()=>api('/pen_test',{s:+$('#snum').value}));
+$('#bssave').onclick=()=>{saveCfg({pen_down_s:+$('#snum').value});$('#scur').textContent=$('#snum').value;toast('Valeur du stylo baissé : S'+$('#snum').value)};
+$('#limX').onclick=()=>act(()=>api('/limit',{axis:'x'}));$('#limY').onclick=()=>act(()=>api('/limit',{axis:'y'}));$('#limClr').onclick=()=>act(()=>api('/limit',{axis:'clear'}));
+$('#bunlock2').onclick=()=>act(()=>api('/unlock',{}));
+$('#breset').onclick=()=>act(()=>api('/reset',{}));
+$('#bsettings').onclick=()=>act(()=>api('/raw',{cmd:'$$'}));
+const sendCmd=()=>{const v=$('#cmd').value.trim();if(!v)return;$('#cmd').value='';act(()=>api('/raw',{cmd:v}))};
+$('#bsend').onclick=sendCmd;$('#cmd').onkeydown=e=>{if(e.key==='Enter')sendCmd()};
+$('#steps').innerHTML=STEPS.map(s=>`<span class=chip data-s=${s}>${s}</span>`).join('');
+$$('#steps .chip').forEach(c=>c.onclick=()=>{step=+c.dataset.s;$$('#steps .chip').forEach(x=>x.classList.toggle('on',x===c));saveUI('step',step)});
+
+/* ───── réglages ───── */
+const PAPERS=[['297x210','A4 paysage 297×210'],['210x256','A4 portrait 210×(297→256)'],['210x148','A5 paysage 210×148'],['148x210','A5 portrait 148×210'],['148x105','A6 paysage 148×105'],['105x148','A6 portrait 105×148'],['200x200','Carré 200×200'],['220x110','Enveloppe DL 220×110'],['85x55','Carte de visite 85×55'],['area','Zone entière'],['custom','Personnalisé']];
+function paperKey(){const k=`${CFG.paper_w}x${CFG.paper_h}`;if(PAPERS.some(q=>q[0]===k))return k;return CFG.paper_w===CFG.area_w&&CFG.paper_h===CFG.area_h?'area':'custom'}
+function fillPaperSels(){['#paper','#cpaper'].forEach(id=>{const el=$(id);if(!el.options.length)PAPERS.forEach(([v,t])=>el.append(new Option(t,v)));el.value=paperKey()})}
+function setPaper(v){if(v==='custom'){fillPaperSels();return}const[w,h]=v==='area'?[CFG.area_w,CFG.area_h]:v.split('x').map(Number);
+  saveCfg({paper_w:w,paper_h:h});fillSettings();stage.fit();gstage.fit();draw()}
+function renderPensEditor(){const box=$('#pens');box.innerHTML='';
+  PENS().forEach((q,i)=>box.insertAdjacentHTML('beforeend',`<input type=color value="${q.color}" data-pi=${i}><input type=text value="${esc(q.name)}" data-pn=${i} maxlength=24><span style="display:flex;gap:4px;align-items:center"><input type=number data-ps=${i} min=0 max=1000 step=5 value="${q.s||''}" placeholder="S ${CFG.pen_down_s||905}" style="width:78px" title="Valeur S du stylo baissé pour ce stylo (vide = valeur générale)"></span>`));
+  const tg=$('#prTarget');if(tg){tg.innerHTML='<option value="g">Tous les stylos (valeur générale)</option>'+PENS().map((q,i)=>`<option value="${i}">${esc(q.name)} seulement</option>`).join('')}
+  const upd=()=>{saveCfg({pens:CFG.pens});renderItems();renderInsp();draw()};
+  box.querySelectorAll('[data-pi]').forEach(el=>el.oninput=()=>{CFG.pens[+el.dataset.pi].color=el.value;upd()});
+  box.querySelectorAll('[data-ps]').forEach(el=>el.onchange=()=>{const v=parseInt(el.value);CFG.pens[+el.dataset.ps].s=v>0?Math.min(1000,v):0;upd()});
+  box.querySelectorAll('[data-pn]').forEach(el=>el.onchange=()=>{CFG.pens[+el.dataset.pn].name=el.value.trim()||('Stylo '+(+el.dataset.pn+1));upd()})}
+function fillSettings(){$$('[data-c]').forEach(el=>{const v=CFG[el.dataset.c];if(el.type==='checkbox')el.checked=!!v;else el.value=v});
+  fillPaperSels();$('#cmargin').value=CFG.margin;$('#csnap').checked=snapOn();if(!$('#pens').children.length)renderPensEditor();if(!$('#prS').value)$('#prS').value=Math.max(0,(CFG.pen_down_s||905)-60);
+  $('#snum').value=$('#srange').value=CFG.pen_down_s;$('#scur').textContent=CFG.pen_down_s}
+$$('[data-c]').forEach(el=>el.onchange=()=>{const v=el.type==='checkbox'?el.checked:el.type==='number'?parseFloat(el.value):el.value;if(el.type==='number'&&!isFinite(v))return;
+  saveCfg({[el.dataset.c]:v});if(/area|paper/.test(el.dataset.c)){stage.fit();gstage.fit();fillSettings()}if(el.dataset.c==='pen_down_s')fillSettings();updInfo()});
+$('#paper').onchange=e=>setPaper(e.target.value);$('#cpaper').onchange=e=>setPaper(e.target.value);
+$('#crot').onclick=()=>{const w=Math.min(CFG.paper_h,CFG.area_w),h=Math.min(CFG.paper_w,CFG.area_h);saveCfg({paper_w:w,paper_h:h});fillSettings();stage.fit();gstage.fit();draw()};
+$('#cmargin').onchange=e=>{saveCfg({margin:Math.max(0,Math.min(100,+e.target.value||0))});draw()};
+$('#csnap').onchange=e=>saveUI('snap',e.target.checked);
+$('#callctr').onclick=centerAll;
+
+
+/* ───── historique (annuler / rétablir) ───── */
+const HIST={s:[],i:-1};let histT=null;
+const snapOf=()=>ITEMS.map(it=>({...it,p:{...it.p}}));
+const sigOf=a=>JSON.stringify(a.map(it=>[it.id,it.cx,it.cy,it.rot,it.scale,it.vis,it.name,it.pen||0,it.p,it.w,it.h,it.paths.length]));
+function doCommit(){clearTimeout(histT);histT=null;const a=snapOf(),sg=sigOf(a);
+  if(HIST.i>=0&&HIST.s[HIST.i].sg===sg)return;
+  HIST.s.length=HIST.i+1;HIST.s.push({a,sg,sel:SEL,sels:[...SELS]});if(HIST.s.length>80)HIST.s.shift();HIST.i=HIST.s.length-1;updHist();schedAutosave()}
+function commit(now){if(now)doCommit();else{clearTimeout(histT);histT=setTimeout(doCommit,450)}}
+function amend(){if(HIST.i>=0&&HIST.i===HIST.s.length-1){const a=snapOf();HIST.s[HIST.i]={a,sg:sigOf(a),sel:SEL,sels:[...SELS]};schedAutosave()}}
+function restoreHist(h){ITEMS=h.a.map(it=>({...it,p:{...it.p},busy:false}));SELS=new Set((h.sels||(h.sel!=null?[h.sel]:[])).filter(id=>ITEMS.some(i=>i.id===id)));SEL=SELS.size===1?[...SELS][0]:null;renderItems();renderInsp();draw();updInfo();updHist();schedAutosave()}
+function undo(){if(histT)doCommit();if(HIST.i<=0)return;HIST.i--;restoreHist(HIST.s[HIST.i])}
+function redo(){if(histT)doCommit();if(HIST.i>=HIST.s.length-1)return;HIST.i++;restoreHist(HIST.s[HIST.i])}
+function updHist(){$('#bundo').disabled=HIST.i<=0;$('#bredo').disabled=HIST.i>=HIST.s.length-1}
+$('#bundo').onclick=undo;$('#bredo').onclick=redo;
+
+/* ───── projets (.vg4) + sauvegarde automatique ───── */
+const B64C=new WeakMap();
+const b64=blob=>B64C.has(blob)?Promise.resolve(B64C.get(blob)):new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>{B64C.set(blob,r.result);ok(r.result)};r.onerror=ko;r.readAsDataURL(blob)});
+async function projectJSON(){const items=[];
+  for(const it of ITEMS){const o={type:it.type,name:it.name,cx:it.cx,cy:it.cy,rot:it.rot,scale:it.scale,vis:it.vis,pen:it.pen||0,p:it.p};
+    if(it.src&&it.src.blob)o.src={name:it.src.name,data:await b64(it.src.blob)};
+    if(it.type==='shape'&&it.p.lib&&!it.p.inline)o.inline=it.paths;items.push(o)}
+  return{app:'VG-X4',version:1,saved:new Date().toISOString(),paper:{w:CFG.paper_w,h:CFG.paper_h},margin:CFG.margin,items}}
+let autoT=null;
+function schedAutosave(){clearTimeout(autoT);autoT=setTimeout(async()=>{if(!ITEMS.length)return;try{await api('/autosave',await projectJSON())}catch(e){}},3000)}
+function showPName(){$('#pname').textContent=PROJ.name?('· '+PROJ.name):'';document.title=PROJ.name?`Atelier Traceuse — ${PROJ.name}`:'Atelier Traceuse'}
+async function loadProject(o,name){
+  if(!o||o.app!=='VG-X4'||!Array.isArray(o.items))throw new Error('Fichier de composition non reconnu.');
+  ITEMS=[];SEL=null;SELS=new Set();const list=[];
+  for(const d of o.items){let it;
+    if(d.type==='text')it=newItem('text',{name:d.name,p:{...d.p}},true);
+    else if(d.type==='shape')it=newItem('shape',{name:d.name,p:{...d.p,...(d.inline?{inline:d.inline}:{})}},true);
+    else{if(!d.src)continue;const blob=await (await fetch(d.src.data)).blob(),file=new File([blob],d.src.name,{type:blob.type});
+      if(d.type==='svg'){const r=await fetch('/api/upload?kind=svg',{method:'POST',headers:{'X-Filename':encodeURIComponent(d.src.name)},body:file}).then(r=>r.json());
+        it=newItem('svg',{name:d.name,uploadId:r.id,src:{name:d.src.name,blob:file},p:{fill:'none',hatch:1,angle:45,...(d.p||{})}},true)}
+      else{const rr=await fetch('/api/upload?kind=image',{method:'POST',headers:{'X-Filename':encodeURIComponent(d.src.name)},body:file}),j=await rr.json();if(!rr.ok)throw new Error(j.error);
+        const url=URL.createObjectURL(file),img=new Image();await new Promise(ok=>{img.onload=ok;img.src=url});
+        it=newItem('image',{name:d.name,uploadId:j.id,img,ar:img.height/img.width,otsu:j.otsu,src:{name:d.src.name,blob:file},p:{...d.p}},true);it.w=it.p.width;it.h=it.p.width*it.ar}}
+    Object.assign(it,{cx:d.cx,cy:d.cy,rot:d.rot,scale:d.scale,vis:d.vis!==false,pen:d.pen||0});list.push(it)}
+  if(o.paper&&o.paper.w&&o.paper.h)saveCfg({paper_w:Math.min(o.paper.w,CFG.area_w),paper_h:Math.min(o.paper.h,CFG.area_h)});
+  if(o.margin!=null)saveCfg({margin:o.margin});
+  fillSettings();stage.fit();gstage.fit();clearTrail();renderItems();renderInsp();draw();
+  await Promise.all(list.map(vectorize));
+  PROJ={path:null,name:name||''};showPName();HIST.s=[];HIST.i=-1;commit(true);toast(`Composition ouverte (${list.length} élément${list.length>1?'s':''}).`)}
+async function openProjectFile(f){
+  if(ITEMS.length&&!await ask('Ouvrir une composition',`<p>« ${esc(f.name)} » remplacera la composition actuelle (${ITEMS.length} élément(s)). Tu peux annuler avec ↶ juste après.</p>`,'Ouvrir'))return;
+  await loadProject(JSON.parse(await f.text()),f.name)}
+async function saveProject(as){
+  if(!ITEMS.length){toast('La composition est vide.',true);return}
+  const text=JSON.stringify(await projectJSON());
+  const nm=(PROJ.name||'Composition').replace(/\.vg4$/i,'').replace(/[^\w\- ]/g,'_')+'.vg4';
+  if(window.pywebview&&pywebview.api&&pywebview.api.save_project){
+    if(PROJ.path&&!as){await api('/project/save',{path:PROJ.path,text});toast('Enregistré : '+PROJ.path);return}
+    const q=await pywebview.api.save_project(nm,text);if(q){PROJ={path:q,name:q.split('/').pop()};showPName();toast('Enregistré : '+q)}
+  }else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=nm;a.click();PROJ.name=nm;showPName()}}
+$('#popen').onclick=()=>pick('.vg4');
+$('#psave').onclick=()=>act(()=>saveProject(false));$('#psaveas').onclick=()=>act(()=>saveProject(true));
+$('#plast').onclick=()=>act(async()=>{const o=await api('/autosave');if(!o.items||!o.items.length){toast('Aucune sauvegarde automatique pour l’instant.',true);return}
+  if(ITEMS.length&&!await ask('Rouvrir la dernière composition',`<p>Remplace la composition actuelle (${ITEMS.length} élément(s)) par la dernière sauvegarde automatique (${o.items.length} élément(s)).</p>`,'Rouvrir'))return;
+  await loadProject(o,'(sauvegarde automatique)')});
+
+/* ───── test machine ───── */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function waitIdle(max=30000){const t0=Date.now();await sleep(600);while(Date.now()-t0<max){if(ST.connected&&/^Idle/.test(ST.state))return true;await sleep(200)}return false}
+const ANS={ok:'✓ Oui, bon sens',inv:'↔ Sens inverse',none:'✕ Rien ne bouge',skew:'↗ De travers'};
+const DSTEPS=[
+  {t:'Avancer vers toi',q:'Le chariot s’est-il <b>rapproché de toi</b> (30 mm) ?',dx:0,dy:30},
+  {t:'Reculer (s’éloigner de toi)',q:'Le chariot est-il <b>revenu en arrière</b>, vers le fond de la machine ?',dx:0,dy:-30},
+  {t:'Aller à droite',q:'Le chariot est-il parti <b>à ta droite</b> ?',dx:30,dy:0},
+  {t:'Aller à gauche',q:'Le chariot est-il revenu <b>vers ta gauche</b> ?',dx:-30,dy:0},
+  {t:'Diagonale (droite + vers toi)',q:'Le chariot est-il parti en <b>diagonale nette</b>, vers ta droite et vers toi ?',dx:20,dy:20,back:[-20,-20]}];
+let DST={i:-1,ans:[],moved:false,busy:false};
+function renderDiag(){$('#dsteps').innerHTML=DST.i<0?'<div class=hint style="margin:8px 0">Clique « Lancer le test » : la machine doit être connectée, le stylo levé et le chariot loin des bords.</div>':DSTEPS.map((st,k)=>{
+  const a=DST.ans[k],cur=k===DST.i&&!a;
+  return `<div class="wiz ${cur?'cur':''} ${a?'done':''}"><b>${k+1}. ${st.t}</b>${a?` <span class=hint>— ${ANS[a]}</span>`:''}
+    ${cur?(DST.moved?`<div style="margin-top:4px">${st.q}</div><div class=ans>${Object.entries(ANS).map(([v,t])=>`<button data-a="${v}">${t}</button>`).join('')}</div>`:`<div class=ans><button data-run ${DST.busy?'disabled':''}>${DST.busy?'Mouvement en cours…':'▶ Lancer ce mouvement'}</button></div>`):''}</div>`}).join('');
+  $('#dsteps').querySelectorAll('[data-run]').forEach(b=>b.onclick=()=>act(runDiagStep));
+  $('#dsteps').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(()=>answerDiag(b.dataset.a)))}
+async function runDiagStep(){const st=DSTEPS[DST.i];DST.busy=true;renderDiag();
+  try{await api('/jog',{dx:st.dx,dy:st.dy,feed:600});await waitIdle();DST.moved=true}finally{DST.busy=false}renderDiag()}
+async function answerDiag(v){const st=DSTEPS[DST.i];DST.ans[DST.i]=v;DST.moved=false;
+  if(st.back){await api('/jog',{dx:st.back[0],dy:st.back[1],feed:600});await waitIdle()}
+  DST.i++;if(DST.i>=DSTEPS.length){DST.i=DSTEPS.length;renderDiag();showDiagnosis()}else renderDiag()}
+function showDiagnosis(){const[f,b,r,l,d]=DST.ans,items=[];let level='ok';
+  const bad=(t)=>{items.push(t);level='bad'},warn=(t,fix)=>{items.push(t+(fix?` <div class=tools style="margin-top:6px"><button data-fix="${fix}">${fix==='y'?'Inverser l’axe Y':'Inverser l’axe X'}</button></div>`:''));if(level==='ok')level='warn'};
+  if(f==='none'||b==='none')bad('<b>L’axe Y (avancer / reculer) ne bouge pas.</b> Le moteur Y ne tourne pas : vérifie le connecteur du câble (à fond, côté carte et côté moteur), puis inverse les câbles X et Y sur la carte : si le défaut suit le câble, c’est le câble ou le moteur ; s’il reste sur la même sortie, c’est le driver ou la carte.');
+  if(r==='none'||l==='none')bad('<b>L’axe X (droite / gauche) ne bouge pas.</b> Le moteur X ne tourne pas : même vérification (connecteurs, inversion des câbles X/Y pour localiser la panne).');
+  if(f==='inv'&&b==='inv')warn('<b>Avancer et reculer sont inversés.</b> Coche « Inverser l’axe Y » (ou clique le bouton) pour corriger.','y');
+  else if((f==='inv')!==(b==='inv')&&f!=='none'&&b!=='none'&&(f==='inv'||b==='inv'))bad('Résultats incohérents sur Y (un sens correct, l’autre inversé) : refais le test posément.');
+  if(r==='inv'&&l==='inv')warn('<b>Droite et gauche sont inversées.</b> Coche « Inverser l’axe X » (ou clique le bouton) pour corriger.','x');
+  else if((r==='inv')!==(l==='inv')&&r!=='none'&&l!=='none'&&(r==='inv'||l==='inv'))bad('Résultats incohérents sur X : refais le test posément.');
+  if([f,b,r,l,d].includes('skew')||(d==='inv'&&!items.length))bad('<b>Trajectoire de travers.</b> Si un seul moteur tourne, le chariot part en diagonale. Sinon : courroie lâche ou qui saute, rail qui accroche, chariot qui frotte. Teste chaque axe seul avec des pas plus petits (onglet Contrôle) pour repérer lequel dérive.');
+  if(!items.length)items.push('<b>✓ Tout est bon.</b> Les quatre sens et la diagonale sont corrects. Les réglages actuels des axes sont les bons.');
+  $('#dres').innerHTML=`<div class="diag ${level}">${items.join('<hr style="border:0;border-top:1px solid var(--line);margin:8px 0">')}</div>`;
+  $('#dres').querySelectorAll('[data-fix]').forEach(bn=>bn.onclick=()=>{const k=bn.dataset.fix==='y'?'invert_y':'invert_x';saveCfg({[k]:!CFG[k]});fillSettings();toast('Réglage modifié. Relance le test pour vérifier.')})}
+$('#dstart').onclick=()=>act(async()=>{await api('/pen',{down:false});DST={i:0,ans:[],moved:false,busy:false};$('#dres').innerHTML='';renderDiag()});
+$('#dreset').onclick=()=>{DST={i:-1,ans:[],moved:false,busy:false};$('#dres').innerHTML='';renderDiag()};
+renderDiag();
+
+// G-code de test, dans le repère « écran » (haut-gauche = zéro) avec les inversions d'axes
+function gl(x,y,f){const sx=CFG.invert_x?-1:1,sy=CFG.invert_y?-1:1,fm=v=>+v.toFixed(3);return `G1 X${fm(sx*x)} Y${fm(sy*y)}`+(f?` F${f}`:'')}
+const dwellS=()=>((CFG.pen_settle_ms||300)/1000).toFixed(3);
+$('#calDraw').onclick=()=>{const N=+$('#calN').value;if(!(N>=20&&N<=Math.min(AW(),AH())-5)){toast('Côté du carré : entre 20 mm et la zone machine.',true);return}
+  const g=['G21','G90','G94','M5',`G4 P${dwellS()}`,gl(0,0,CFG.travel_feed),`M3 S${CFG.pen_down_s}`,`G4 P${dwellS()}`,gl(N,0,CFG.draw_feed),gl(N,N),gl(0,N),gl(0,0),'M5',`G4 P${dwellS()}`].join('\n')+'\n';
+  startRun({gcode:g,name:'Carré d’étalonnage'},`<p>Carré de <b>${N} mm</b> depuis le zéro, vers la droite et vers toi. Mesure ensuite ses côtés.</p>`)};
+let CAL=null;
+$('#calCalc').onclick=()=>act(async()=>{const N=+$('#calN').value,mx=parseFloat($('#calMx').value),my=parseFloat($('#calMy').value);
+  if(!(mx>0)&&!(my>0)){toast('Entre au moins une mesure (en mm).',true);return}
+  const S=(await api('/grbl/read',{})).settings,cur={x:S['100'],y:S['101']};
+  if(!(cur.x>0)||!(cur.y>0)){toast('Impossible de lire $100 / $101.',true);return}
+  CAL={N,rows:[]};
+  [['x',mx,'$100'],['y',my,'$101']].forEach(([a,m,n])=>{if(!(m>0))return;const nv=cur[a]*N/m,dev=(m/N-1)*100;CAL.rows.push({a,n,m,old:cur[a],nv,dev,apply:Math.abs(dev)>=0.2})});
+  $('#calRes').innerHTML='<table class=cal><tr><th>Axe</th><th>Mesuré</th><th>Écart</th><th>Réglage actuel</th><th>Nouveau</th></tr>'+CAL.rows.map(r=>`<tr><td>${r.a.toUpperCase()}</td><td>${r.m} mm</td><td>${r.dev>=0?'+':''}${r.dev.toFixed(2)} %</td><td>${r.n}=${r.old}</td><td>${r.apply?`<b>${r.n}=${r.nv.toFixed(3)}</b>`:'inchangé (écart &lt; 0,2 %)'}</td></tr>`).join('')+'</table>';
+  $('#calApply').style.display=CAL.rows.some(r=>r.apply)?'':'none'});
+$('#calApply').onclick=async()=>{if(!CAL)return;const rows=CAL.rows.filter(r=>r.apply);
+  const ok=await ask('Appliquer l’étalonnage',`<p>Ces valeurs seront écrites dans la carte GRBL (mémoire permanente) :</p>${rows.map(r=>`<p><b>${r.n}</b> : ${r.old} → <b>${r.nv.toFixed(3)}</b></p>`).join('')}<p class=hint>Note les anciennes valeurs pour pouvoir revenir en arrière. Refais ensuite le carré pour vérifier.</p>`,'Appliquer');
+  if(!ok)return;await act(async()=>{for(const r of rows)await api('/grbl/steps',{axis:r.a,value:+r.nv.toFixed(3)});toast('Étalonnage appliqué. Retrace un carré pour vérifier.');$('#calApply').style.display='none'})};
+function alignRun(axis){
+  const x=axis==='x',len=parseFloat($('#alLen').value),L=Math.min(len>0?len:(x?CFG.paper_w:CFG.paper_h),x?AW():AH());
+  const f=Math.max(100,Math.min(5000,+$('#alFeed').value||1500)),n=Math.max(1,Math.min(50,Math.round(+$('#alN').value||5)));
+  const g=['G21','G90','G94','M5',gl(0,0,CFG.travel_feed)];
+  for(let i=0;i<n;i++)g.push(x?gl(L,0,i?0:f):gl(0,L,i?0:f),gl(0,0));
+  g.push('M5');
+  return act(()=>api('/run',{gcode:g.join('\n')+'\n',name:'Alignement '+(x?'bord haut':'bord gauche')}))}
+$('#alX').onclick=()=>alignRun('x');$('#alY').onclick=()=>alignRun('y');
+
+/* ───── cadre, essai à blanc ───── */
+$('#bframe').onclick=()=>{const g=curGroupsOrWarn();if(!g)return;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;g.forEach(o=>o.paths.forEach(pa=>pa.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)})));
+  const lines=['G21','G90','G94','M5',gl(x0,y0,CFG.travel_feed),gl(x1,y0,1500),gl(x1,y1),gl(x0,y1),gl(x0,y0),gl(0,0,CFG.travel_feed),'M5'].join('\n')+'\n';
+  startRun({gcode:lines,name:'Cadre'},`<p>Le stylo, <b>levé</b>, fait le tour du dessin : de ${x0.toFixed(0)}×${y0.toFixed(0)} à ${x1.toFixed(0)}×${y1.toFixed(0)} mm (${(x1-x0).toFixed(0)} × ${(y1-y0).toFixed(0)} mm), puis revient au zéro.</p>`)};
+$('#bdry').onclick=()=>{const g=curGroupsOrWarn();if(!g)return;startRun({groups:g,name:'Composition',dry:true},`<p>Essai à blanc : tout le trajet est parcouru, <b>stylo levé</b>, sans pause. Rien n'est dessiné.</p><p class=hint>${$('#sumtxt').textContent}</p>`)};
+$('#gdry').onclick=()=>{const t=$('#gtext').value;if(!t.trim()){toast('G-code vide.',true);return}
+  startRun({gcode:t,name:$('#gname').textContent||'G-code',dry:true,force:$('#gforce').checked},`<p>Essai à blanc : le trajet est parcouru <b>stylo levé</b>.</p><p class=hint>${$('#gstats').textContent}</p>`)};
+
+/* ───── modèles de mise en page ───── */
+const TEMPLATES={
+  enveloppe:{paper:[220,110],items:[
+    {text:'Expéditeur\n1 rue Exemple\n75000 Paris',size:3.2,anchor:'tl'},
+    {text:'Destinataire\n12 avenue Exemple\n69000 Lyon',size:4.6,anchor:'c',dx:28,dy:14}]},
+  voeux:{paper:[148,105],items:[
+    {text:'Joyeux anniversaire !',size:9,anchor:'c',dy:-10,align:'center'},
+    {text:'Avec toute mon affection',size:4.6,anchor:'c',dy:14,align:'center'}]},
+  lettre:{paper:[210,256],items:[
+    {text:()=>'Paris, le '+new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}),size:3.8,anchor:'tr'},
+    {text:'Destinataire\nAdresse\nCode postal Ville',size:3.8,anchor:'tl',dy:30},
+    {text:'Madame, Monsieur,\n\nVotre texte ici…',size:3.8,anchor:'tl',dy:62,maxw:true}]},
+  etiquette:{paper:[85,55],items:[{text:'Confiture\nde fraises',size:7,anchor:'c',align:'center'}]}};
+async function applyTemplate(key){const T=TEMPLATES[key];if(!T)return;
+  if(ITEMS.length&&!await ask('Appliquer un modèle',`<p>Le modèle remplace la composition actuelle (${ITEMS.length} élément(s)) et règle le papier sur ${T.paper[0]} × ${T.paper[1]} mm. Tu peux annuler avec ↶.</p>`,'Appliquer'))return;
+  ITEMS=[];SEL=null;SELS=new Set();clearTrail();
+  saveCfg({paper_w:Math.min(T.paper[0],CFG.area_w),paper_h:Math.min(T.paper[1],CFG.area_h)});fillSettings();stage.fit();gstage.fit();
+  const u=CFG.ui||{},[pw,ph]=paperDims(),mg=CFG.margin||0,list=[];
+  for(const d of T.items){const text=typeof d.text==='function'?d.text():d.text;
+    list.push([newItem('text',{p:{text,font:u.font||'scripts',size:d.size,line_spacing:1.8,letter_spacing:0,align:d.align||'left',slant:0,jitter:.3,max_width:d.maxw?pw-2*mg:0,seed:1+list.length,trace:'skeleton',word_spacing:0,wobble:0,smooth:0}},true),d])}
+  await Promise.all(list.map(([it])=>vectorize(it)));
+  for(const [it,d] of list){const w=it.w*it.scale,h=it.h*it.scale,dx=d.dx||0,dy=d.dy||0;
+    const X={tl:mg+w/2,tr:pw-mg-w/2,c:pw/2,tc:pw/2},Y={tl:mg+h/2,tr:mg+h/2,c:ph/2,tc:mg+h/2};
+    it.cx=X[d.anchor]+dx;it.cy=Y[d.anchor]+dy}
+  renderItems();draw();updInfo();commit(true);toast('Modèle appliqué : modifie les textes à ta guise.')}
+$('#tpl').onchange=e=>{const k=e.target.value;e.target.value='';if(k)act(()=>applyTemplate(k))};
+
+/* ───── journal des tracés ───── */
+const fmtDur=sec=>{sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${h} h ${String(m).padStart(2,'0')}`:m?`${m} min ${String(s).padStart(2,'0')}`:`${s} s`};
+async function loadJournal(){const r=await api('/history');const J=r.jobs||[];
+  const ST_={done:'✓ terminé',stopped:'■ arrêté',error:'✖ erreur',idle:'—'};
+  const real=J.filter(j=>!j.sim&&!/^(Essai|Cadre|Alignement)/.test(j.name||''));
+  const dist=real.reduce((a,j)=>a+(j.draw_mm||0)*(j.frac||0),0),dur=real.reduce((a,j)=>a+(j.duration||0),0);
+  $('#jtot').textContent=J.length?`${real.length} tracé${real.length>1?'s':''} sur la machine · ${(dist/1000).toFixed(2)} m dessinés · ${fmtDur(dur)} de tracé (hors simulation, essais à blanc et alignements)`:'Aucun tracé enregistré pour l’instant.';
+  $('#jtab').innerHTML=J.length?'<tr><th>Date</th><th>Tracé</th><th>État</th><th>Durée</th><th>Dessiné</th><th></th></tr>'+J.map(j=>`<tr><td>${esc((j.t||'').replace('T',' '))}</td><td>${esc(j.name||'')}</td><td>${ST_[j.state]||esc(j.state)}${j.state==='stopped'||j.state==='error'?` (${Math.round((j.frac||0)*100)} %)`:''}</td><td>${fmtDur(j.duration||0)}</td><td>${j.draw_mm?((j.draw_mm*(j.frac||0))/1000).toFixed(2)+' m':'—'}</td><td class=hint>${j.sim?'simulation':''}</td></tr>`).join(''):''}
+$('#jref').onclick=()=>act(loadJournal);
+$('#jclr').onclick=()=>act(async()=>{if(!await ask('Effacer le journal','<p>Supprime tout l’historique des tracés. Cette action est définitive.</p>','Effacer'))return;await api('/history/clear',{});await loadJournal()});
+
+/* ───── sauvegarde / restauration des réglages de la carte ───── */
+const doBackup=()=>act(async()=>{const r=await api('/grbl/backup',{});toast('Sauvegardé : '+r.file.split('/').slice(-2).join('/'))});
+$('#bbackup').onclick=doBackup;$('#calBackup').onclick=doBackup;
+$('#calRestore').onclick=()=>act(async()=>{const b=await api('/grbl/backup');if(!b.name){toast('Aucune sauvegarde trouvée.',true);return}
+  const st=b.settings||{};
+  if(!await ask('Restaurer l’étalonnage',`<p>Remet les pas/mm de la sauvegarde <b>${esc(b.name)}</b> (${esc(b.date)}) :</p><p><b>$100</b> = ${st['100']} · <b>$101</b> = ${st['101']}</p><p class=hint>Les autres réglages de la carte ne sont pas touchés.</p>`,'Restaurer'))return;
+  const r=await api('/grbl/restore',{});toast('Étalonnage restauré ('+Object.keys(r.restored).join(', ').toUpperCase()+').')});
+
+
+/* ───── jeu mécanique : mire ───── */
+function bkPattern(ox,oy){const dw=dwellS(),T=CFG.travel_feed,F=CFG.draw_feed,S=CFG.pen_down_s,px=ox+50;
+  const tick=(x,y,x2,y2)=>[gl(x,y,T),`M3 S${S}`,`G4 P${dw}`,gl(x2,y2,F),'M5',`G4 P${dw}`];
+  return ['G21','G90','G94','M5',`G4 P${dw}`,
+    ...tick(ox,oy,ox,oy+4),                           // trait A (vertical)
+    gl(ox+30,oy+4,T),gl(ox+30,oy+8),                  // vers la droite…
+    ...tick(ox,oy+8,ox,oy+12),                        // …retour à gauche (inversion de X) : trait B
+    gl(px,oy+40,T),                                   // test Y : on arrive par le bas (Y négatif)
+    ...tick(px,oy,px+4,oy),                           // trait C (horizontal)
+    gl(px+6,oy-8,T),                                  // on repart vers le haut puis on arrive par le haut (Y positif)
+    ...tick(px+6,oy,px+10,oy),                        // trait D (horizontal)
+    gl(0,0,T),'M5'].join('\n')+'\n'}
+$('#bkDraw').onclick=()=>startRun({gcode:bkPattern(10,14),name:'Mire jeu mécanique',nocomp:true},'<p>Mire sans compensation : deux traits verticaux (X) et deux traits horizontaux (Y) à côté l’un de l’autre. Mesure leur décalage.</p>');
+$('#bkCheck').onclick=()=>startRun({gcode:bkPattern(10,84),name:'Mire jeu (compensé)'},`<p>Même mire <b>avec</b> la compensation actuelle (X ${CFG.backlash_x||0} mm, Y ${CFG.backlash_y||0} mm), plus bas sur la feuille : les traits doivent être alignés.</p>`);
+$('#bkSave').onclick=()=>{const x=Math.max(0,Math.min(3,+$('#bkMx').value||0)),y=Math.max(0,Math.min(3,+$('#bkMy').value||0));saveCfg({backlash_x:x,backlash_y:y});fillSettings();
+  $('#bkInfo').textContent=`Compensation enregistrée : X ${x} mm, Y ${y} mm. Clique « Vérifier avec la compensation ».`};
+
+/* ───── SVG multicolore → un objet et un stylo par couleur ───── */
+async function splitSvgColors(it){const cols=(it.meta&&it.meta.colors)||[];if(cols.length<2)return;
+  const max=Math.min(cols.length,PENS().length),list=cols.slice(0,max);
+  const ok=await ask('SVG multicolore',`<p>Ce SVG contient <b>${cols.length}</b> couleurs. Créer un objet par couleur, chacun avec son stylo ?</p>${list.map((c,i)=>`<div class=row><i class=pd style="background:${c.color};width:14px;height:14px"></i> ${c.color} — ${c.n} tracés → stylo ${i+1} (${esc(PENS()[i].name)})</div>`).join('')}${cols.length>max?`<p class=hint>Seuls ${max} stylos existent : les couleurs en trop sont regroupées avec la dernière.</p>`:''}<label class=hint style="display:flex;gap:6px;margin-top:6px"><input type=checkbox id=svgap checked> colorer les stylos d’après le SVG</label>`,'Séparer');
+  if(!ok)return;const ap=$('#svgap').checked,group=i=>i<max-1?list[i].color:cols.slice(max-1).map(c=>c.color).join(','),made=[it];
+  it.p.color=group(0);it.pen=0;
+  for(let i=1;i<max;i++){const c=newItem('svg',{name:it.name.replace(/\.svg$/i,'')+' · '+cols[i].color,uploadId:it.uploadId,src:it.src,pen:i,p:{...it.p,color:group(i)},cx:it.cx,cy:it.cy,rot:it.rot,scale:it.scale},true);made.push(c)}
+  it.name=it.name.replace(/\.svg$/i,'')+' · '+cols[0].color;
+  if(ap){list.forEach((c,i)=>{CFG.pens[i].color=c.color});saveCfg({pens:CFG.pens});renderPensEditor()}
+  await Promise.all(made.map(vectorize));renderItems();draw();updInfo();commit(true);toast(`${made.length} objets créés (un par couleur).`)}
+
+/* ───── répéter en grille ───── */
+function cloneItem(it){const c=newItem(it.type,{name:it.name,uploadId:it.uploadId,img:it.img,ar:it.ar,otsu:it.otsu,src:it.src,pen:it.pen||0,p:{...it.p},cx:it.cx,cy:it.cy,rot:it.rot,scale:it.scale,paths:it.paths,w:it.w,h:it.h,meta:it.meta},true);
+  c.path2d=it.path2d;c.len=it.len;c.baseW=it.baseW;return c}
+async function repeatItem(it){
+  const ok=await ask('Répéter l’objet',`<div class=row><label>Colonnes</label><input type=number id=rpc value=3 min=1 max=40></div><div class=row><label>Lignes</label><input type=number id=rpr value=2 min=1 max=40></div>
+    <div class=row><label>Écart horizontal</label><input type=number id=rpgx value=6 step=1><span class=hint>mm</span></div><div class=row><label>Écart vertical</label><input type=number id=rpgy value=6 step=1><span class=hint>mm</span></div>
+    <label class=hint style="display:flex;gap:6px"><input type=checkbox id=rpctr checked> centrer la grille sur le papier</label>`,'Répéter');
+  if(!ok)return;const C=Math.max(1,Math.min(40,+$('#rpc').value||1)),R=Math.max(1,Math.min(40,+$('#rpr').value||1)),gx=+$('#rpgx').value||0,gy=+$('#rpgy').value||0,ctr=$('#rpctr').checked;
+  if(C*R>400){toast('Trop de copies (400 maximum).',true);return}
+  const b=bboxOf(it),pw=b.R-b.L,ph=b.B-b.T,list=[it];
+  for(let j=0;j<R;j++)for(let i=0;i<C;i++){if(!i&&!j)continue;const c=cloneItem(it);c.cx=it.cx+i*(pw+gx);c.cy=it.cy+j*(ph+gy);list.push(c)}
+  if(ctr){let L=1e9,Rr=-1e9,T=1e9,B=-1e9;list.forEach(i=>{const q=bboxOf(i);L=Math.min(L,q.L);Rr=Math.max(Rr,q.R);T=Math.min(T,q.T);B=Math.max(B,q.B)});
+    const[cx,cy]=paperCenter(),dx=cx-(L+Rr)/2,dy=cy-(T+B)/2;list.forEach(i=>{i.cx+=dx;i.cy+=dy})}
+  renderItems();draw();updInfo();commit(true);toast(`${list.length-1} copie${list.length>2?'s':''} créée${list.length>2?'s':''}.`)}
+
+/* ───── publipostage (CSV) ───── */
+const MERGE={on:false,rows:[],cols:[],idx:0};
+const mergeText=t=>{if(!MERGE.on)return t;const row=MERGE.rows[MERGE.idx]||{};return String(t).replace(/\{([^{}]+)\}/g,(m,k)=>{const v=row[k.trim().toLowerCase()];return v===undefined?m:v})};
+function parseCSV(text){text=text.replace(/^﻿/,'');const first=text.split(/\r?\n/)[0]||'';
+  const sep=[';','\t',','].map(c=>[c,(first.match(new RegExp(c==='\t'?'\t':'\\'+c,'g'))||[]).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch==='"')q=true;else if(ch===sep){row.push(cur);cur=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(x=>x.trim()))rows.push(row);row=[]}
+    else cur+=ch}
+  if(cur||row.length){row.push(cur);if(row.some(x=>x.trim()))rows.push(row)}
+  if(rows.length<2)return{cols:[],rows:[]};
+  const cols=rows[0].map(c=>c.trim().toLowerCase());
+  return{cols,rows:rows.slice(1).map(r=>Object.fromEntries(cols.map((c,i)=>[c,(r[i]||'').trim()])))}}
+async function applyMerge(){const ts=ITEMS.filter(i=>i.type==='text'&&/\{[^{}]+\}/.test(i.p.text||''));await Promise.all(ts.map(vectorize));
+  $('#mnum').textContent=` ${MERGE.idx+1} / ${MERGE.rows.length} `;$('#mprev').disabled=MERGE.idx<=0;$('#mnext').disabled=MERGE.idx>=MERGE.rows.length-1;draw()}
+$('#pmerge').onclick=()=>{if(MERGE.on){toast('Un publipostage est déjà actif (bouton Quitter pour l’arrêter).');return}$('#fileCsv').value='';$('#fileCsv').click()};
+$('#fileCsv').onchange=e=>act(async()=>{const f=e.target.files[0];if(!f)return;const r=parseCSV(await f.text());
+  if(!r.rows.length){toast('CSV vide ou illisible (il faut une ligne d’en-têtes puis au moins une ligne de données).',true);return}
+  MERGE.on=true;MERGE.rows=r.rows;MERGE.cols=r.cols;MERGE.idx=0;$('#mergebar').style.display='';$('#mcols').textContent='Colonnes : '+r.cols.map(c=>'{'+c+'}').join(' ');
+  if(!ITEMS.some(i=>i.type==='text'&&/\{[^{}]+\}/.test(i.p.text||'')))toast(`Écris des champs dans tes textes, par exemple ${'{'+r.cols[0]+'}'} : ils seront remplacés fiche par fiche.`);
+  await applyMerge()});
+$('#mprev').onclick=()=>act(async()=>{if(MERGE.idx>0){MERGE.idx--;await applyMerge()}});
+$('#mnext').onclick=()=>act(async()=>{if(MERGE.idx<MERGE.rows.length-1){MERGE.idx++;await applyMerge()}});
+$('#mquit').onclick=()=>act(async()=>{MERGE.on=false;$('#mergebar').style.display='none';await applyMerge()});
+async function waitJob(){let t0=Date.now();while(!(ST.job&&ST.job.running)&&Date.now()-t0<6000)await sleep(150);while(ST.job&&ST.job.running)await sleep(300);return ST.job&&ST.job.state}
+$('#mall').onclick=()=>act(async()=>{const N=MERGE.rows.length,start=MERGE.idx;
+  if(!ST.connected){toast('Connecte la machine (ou lance la Simulation) d’abord.',true);return}
+  for(let i=start;i<N;i++){MERGE.idx=i;await applyMerge();const g=curGroupsOrWarn();if(!g)return;
+    const ok=await startRun({groups:g,name:`Fiche ${i+1}/${N}`},`<p><b>Publipostage</b> : ${N-i} fiche${N-i>1?'s':''} à tracer, de la ${i+1} à la ${N}. Après chaque fiche, l’app te laissera changer la feuille.</p><p class=hint>${$('#sumtxt').textContent}</p>`,{noConfirm:i>start});
+    if(!ok)return;const st=await waitJob();if(st!=='done'){toast('Publipostage interrompu.',true);return}
+    if(i<N-1&&!await ask(`Fiche ${i+2} / ${N}`,'<p>Place la <b>feuille suivante</b> (même position), vérifie le point zéro puis continue.</p>',`▶ Tracer la fiche ${i+2}`,'Arrêter ici'))return}
+  toast('Publipostage terminé.')});
+
+/* ───── documents Word / PDF ───── */
+const DOC={on:false,tok:null,id:null,info:null,name:'',opts:null,idx:0,n:1,sig:'',blobs:new Map(),els:new Map()};
+const DOCDEF={font:'scripts',size:4,line_spacing:1.7,reflow:true,images:true,img_w:80,img_mode:'contour'};
+const IMG_MODES=[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']];
+const docSig=()=>JSON.stringify(ITEMS.filter(i=>i.doc===DOC.tok).map(i=>[i.id,+i.cx.toFixed(2),+i.cy.toFixed(2),i.rot,i.scale,i.vis,i.pen||0,i.p]));
+const docReq=(id,o,page)=>({id,font:o.font,size:o.size,line_spacing:o.line_spacing,letter_spacing:0,gap:.6,reflow:o.reflow,breaks:o.breaks,tables:o.tables!==false,images:o.images,img_w:o.img_w,rotate:o.rotate||0,margin:o.margin,paper_w:paperDims()[0],paper_h:paperDims()[1],page});
+const docBlob=async i=>{if(!DOC.blobs.has(i))DOC.blobs.set(i,await fetch(`/api/doc/img?id=${DOC.id}&i=${i}`).then(r=>r.blob()));return DOC.blobs.get(i)};
+function docPreview(cv,L,o,id,redraw){const[pw,ph]=paperDims(),w=Math.max(200,cv.clientWidth),h=Math.round(w*ph/pw),dpr=window.devicePixelRatio||1,s=w/pw;
+  cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+  x.fillStyle='#fff';x.fillRect(0,0,w,h);x.strokeStyle='rgba(110,130,200,.55)';x.lineWidth=1;x.setLineDash([3,3]);x.strokeRect(o.margin*s,o.margin*s,(pw-2*o.margin)*s,(ph-2*o.margin)*s);x.setLineDash([]);
+  x.strokeStyle='#18236b';x.lineWidth=Math.max(.8,.4*s);x.lineCap=x.lineJoin='round';
+  for(const e of L.items){
+    const rt=(e.rot||0)*Math.PI/180,rc=Math.cos(rt),rs=Math.sin(rt),P=(q)=>[(e.cx+q[0]*rc-q[1]*rs)*s,(e.cy+q[0]*rs+q[1]*rc)*s];
+    if(e.kind!=='image'){x.beginPath();for(const p of e.paths){if(p.length<2)continue;x.moveTo(...P(p[0]));for(let k=1;k<p.length;k++)x.lineTo(...P(p[k]))}x.stroke()}
+    else{const key=id+':'+e.i;let im=DOC.els.get(key);if(!im){im=new Image();im.onload=redraw;im.src=`/api/doc/img?id=${id}&i=${e.i}`;DOC.els.set(key,im)}
+      x.save();x.translate(e.cx*s,e.cy*s);x.rotate(rt);const X=-e.w/2*s,Y=-e.h/2*s;if(im.complete&&im.naturalWidth){x.globalAlpha=.5;x.drawImage(im,X,Y,e.w*s,e.h*s);x.globalAlpha=1}
+      x.strokeStyle='#e8541a';x.setLineDash([4,3]);x.lineWidth=1;x.strokeRect(X,Y,e.w*s,e.h*s);x.restore()}}}
+/* boîte de réglages ; retourne les options choisies ou null */
+async function docDialog(j,o0,page0){
+  const o={...o0};let page=page0||0,npages=1,last=null,seq=0,tm=null;
+  const fonts=FONTS.filter(f=>!f.id.startsWith('sys:')),groups={};fonts.forEach(f=>(groups[f.group]=groups[f.group]||[]).push(f));
+  const pl=(n,w)=>`${n} ${w}${n>1?'s':''}`;
+  const html=`<div id=docdlg><div>
+    <div class=hint style="margin-bottom:8px"><b>${esc(j.name)}</b><br>${pl(j.paragraphs,'paragraphe')} · ${j.chars.toLocaleString('fr-FR')} caractères · ${pl(j.images,'image')}${j.skipped?` (${j.skipped} ignorée${j.skipped>1?'s':''} : format non lisible ou trop petite)`:''}</div>
+    <div class=row><label>Police</label><select id=dfont style="flex:1;max-width:190px">${Object.entries(groups).map(([g,fs])=>`<optgroup label="${esc(g)}">${fs.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+    <div class=row><label>Hauteur lettres</label><input type=number id=dsize min=1.5 max=30 step=.5 style="width:70px"><span class=hint>mm</span></div>
+    <div class=row><label>Interligne</label><input type=range id=dls min=1.2 max=3 step=.1 style="flex:1"><span class=hint id=dlsv style="width:28px"></span></div>
+    <div class=row><label>Marge</label><input type=number id=dmargin min=0 max=60 step=1 style="width:70px"><span class=hint>mm</span></div>
+    <label class=chk><input type=checkbox id=dreflow> Réorganiser le texte à la largeur de la feuille</label>
+    <label class=chk><input type=checkbox id=dbreaks> Un saut de page du document = une nouvelle feuille</label>
+    <div class=row><label>Sens du texte</label><select id=drot style="flex:1;max-width:190px"><option value=0>Normal (haut en haut)</option><option value=90>Tourné : haut à droite, bas à gauche</option><option value=270>Tourné : haut à gauche, bas à droite</option><option value=180>Tête en bas</option></select></div>
+    ${j.tables?`<label class=chk><input type=checkbox id=dtables> Garder les tableaux (quadrillage et colonnes)</label>`:''}
+    ${j.images?`<label class=chk><input type=checkbox id=dimgs> Dessiner les images</label>
+      <div class=row id=dimgrow><label>Largeur images</label><input type=number id=dimgw min=10 max=300 step=5 style="width:70px"><span class=hint>mm au maximum</span></div>
+      <div class=row id=dimgrow2><label>Mode images</label><select id=dimgm style="flex:1;max-width:190px">${IMG_MODES.map(([v,t])=>`<option value=${v}>${t}</option>`).join('')}</select></div>`:''}
+    ${ITEMS.some(i=>i.doc!==DOC.tok)?`<label class=chk><input type=checkbox id=dclear checked> Vider la composition actuelle</label>`:''}
+    <div class=hint style="margin-top:8px">Papier ${paperDims().map(v=>Math.round(v)).join(' × ')} mm (réglable dans le Composer). Les titres sont écrits plus grands, les listes avec un tiret, les tableaux avec leur quadrillage (un objet « Tableau » par feuille).</div>
+  </div><div class=pv><canvas id=dcv></canvas><div class=nav><button class=sec id=dpp>◀</button><span>Feuille <b id=dpn>1</b> / <b id=dpt>1</b></span><button class=sec id=dpnx>▶</button></div><div class=hint id=dmsg style="margin-top:8px;min-height:18px"></div></div></div>`;
+  const box=$('#modal .box');box.classList.add('wide');
+  const pr=ask('Écrire ce document',html,'Mettre en page et ajouter','Annuler');
+  const g=id=>$('#'+id);
+  g('dfont').value=o.font;g('dsize').value=o.size;g('dls').value=o.line_spacing;g('dlsv').textContent=o.line_spacing;g('dmargin').value=o.margin;g('dreflow').checked=o.reflow;g('dbreaks').checked=o.breaks;g('drot').value=o.rotate||0;if(j.tables)g('dtables').checked=o.tables!==false;
+  if(j.images){g('dimgs').checked=o.images;g('dimgw').value=o.img_w;g('dimgm').value=o.img_mode}
+  const sync=()=>{if(j.images){const on=g('dimgs').checked;g('dimgrow').style.opacity=g('dimgrow2').style.opacity=on?1:.4}};sync();
+  const paint=()=>{if(last)docPreview(g('dcv'),last,o,j.id,paint)};
+  const refresh=()=>{clearTimeout(tm);tm=setTimeout(async()=>{const my=++seq;g('dmsg').textContent='Mise en page…';
+    try{const L=await api('/doc/layout',docReq(j.id,o,page));if(my!==seq)return;last=L;page=L.page;npages=L.pages;
+      g('dpn').textContent=page+1;g('dpt').textContent=npages;g('dpp').disabled=page<=0;g('dpnx').disabled=page>=npages-1;paint();
+      g('dmsg').textContent=(L.missing.length?`Caractères absents de la police (ignorés) : ${L.missing.join(' ')}`:'')}
+    catch(e){if(my===seq)g('dmsg').textContent=e.message}},180)};
+  const bind=(id,fn)=>{g(id).addEventListener('input',()=>{fn(g(id));sync();refresh()});g(id).addEventListener('change',()=>{fn(g(id));sync();refresh()})};
+  bind('dfont',e=>o.font=e.value);bind('dsize',e=>o.size=Math.max(1.5,Math.min(30,+e.value||4)));bind('dls',e=>{o.line_spacing=+e.value;g('dlsv').textContent=e.value});
+  bind('dmargin',e=>o.margin=Math.max(0,Math.min(60,+e.value||0)));bind('dreflow',e=>o.reflow=e.checked);bind('dbreaks',e=>o.breaks=e.checked);bind('drot',e=>{o.rotate=+e.value;page=0});if(j.tables)bind('dtables',e=>o.tables=e.checked);
+  if(j.images){bind('dimgs',e=>o.images=e.checked);bind('dimgw',e=>o.img_w=Math.max(10,+e.value||80));bind('dimgm',e=>o.img_mode=e.value)}
+  g('dpp').onclick=()=>{page--;refresh()};g('dpnx').onclick=()=>{page++;refresh()};
+  const rs=()=>paint();window.addEventListener('resize',rs);refresh();
+  const ok=await pr;window.removeEventListener('resize',rs);clearTimeout(tm);box.classList.remove('wide');
+  if(!ok)return null;
+  return{o,page,clear:!!(g('dclear')&&g('dclear').checked)}}
+async function openDocument(f){
+  if(DOC.on&&!await ask('Un document est déjà ouvert',`<p>Le remplacer par « ${esc(f.name)} » ? Ses objets restent sur la feuille tels quels.</p>`,'Continuer'))return;
+  toast('Lecture du document…');
+  const r=await fetch('/api/upload?kind=doc',{method:'POST',headers:{'X-Filename':encodeURIComponent(f.name)},body:f});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||('Erreur '+r.status));
+  const saved=(CFG.ui||{}).doc||{};
+  const o0={...DOCDEF,...saved,breaks:j.kind==='docx',margin:saved.margin!=null?saved.margin:Math.max(CFG.margin||0,10)};
+  if(!j.images)o0.images=false;
+  const res=await docDialog(j,o0,0);if(!res)return;
+  const{o}=res;docPrefs(o,j);
+  if(DOC.on)docRelease();
+  DOC.on=true;DOC.id=j.id;DOC.info=j;DOC.name=j.name;DOC.opts=o;DOC.tok='doc'+j.id.slice(0,8)+Date.now();DOC.blobs=new Map();
+  if(res.clear){ITEMS=[];SEL=null;SELS=new Set()}
+  tab('compose');await applyDocPage(res.page);
+  if(DOC.n>1)toast(`${DOC.n} feuilles : navigue avec ◀ ▶ ou trace tout d’un coup.`)}
+function docPrefs(o,j){const old=(CFG.ui||{}).doc||{};saveUI('doc',{font:o.font,size:o.size,line_spacing:o.line_spacing,reflow:o.reflow,images:j.images?o.images:old.images,img_w:o.img_w,img_mode:o.img_mode,margin:o.margin})}
+function docRelease(){ITEMS.forEach(i=>{if(i.doc===DOC.tok)delete i.doc});DOC.on=false;$('#docbar').style.display='none'}
+async function applyDocPage(idx){
+  const L=await api('/doc/layout',docReq(DOC.id,DOC.opts,idx));DOC.idx=L.page;DOC.n=L.pages;
+  ITEMS=ITEMS.filter(i=>i.doc!==DOC.tok);SEL=null;SELS=new Set();const jobs=[];
+  for(const e of L.items){
+    if(e.kind==='text'){const it=newItem('text',{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0,name:e.text.split('\n')[0].slice(0,26),
+        p:{text:e.text,font:e.font,size:e.size,line_spacing:DOC.opts.line_spacing,letter_spacing:0,align:'left',slant:0,jitter:0,max_width:L.max_width,seed:1,trace:'skeleton',word_spacing:0,wobble:0,smooth:0}},true);jobs.push(vectorize(it))}
+    else if(e.kind==='shape'){const it=newItem('shape',{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0,name:e.name,p:{inline:e.paths}},true);jobs.push(vectorize(it))}
+    else jobs.push((async()=>{const it=await makeImageItem(await docBlob(e.i),`Image ${e.i+1}`,{width:e.w,mode:DOC.opts.img_mode,quiet:true,extra:{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0}});await vectorize(it)})())}
+  await Promise.all(jobs);
+  const mine=ITEMS.filter(i=>i.doc===DOC.tok).sort((a,b)=>a.cy-b.cy||a.cx-b.cx);ITEMS=[...ITEMS.filter(i=>i.doc!==DOC.tok),...mine];   // ordre de lecture = ordre de tracé
+  renderItems();renderInsp();draw();updInfo();commit(true);DOC.sig=docSig();
+  $('#docbar').style.display='';$('#dname').textContent=DOC.name;$('#dname').title=DOC.name;$('#dnum').textContent=` ${DOC.idx+1} / ${DOC.n} `;
+  $('#dprevb').disabled=DOC.idx<=0;$('#dnextb').disabled=DOC.idx>=DOC.n-1;
+  $('#dinfo').textContent=L.missing.length?`Caractères absents de la police : ${L.missing.join(' ')}`:'';
+  const out=ITEMS.filter(i=>i.doc===DOC.tok&&outside(i)).length;if(out)toast(`${out} objet${out>1?'s dépassent':' dépasse'} la zone de la machine : réduis la marge ou la taille.`,true)}
+async function docGo(idx){if(idx<0||idx>=DOC.n)return;
+  if(docSig()!==DOC.sig&&!await ask('Changer de feuille ?',`<p>Tu as modifié des objets de cette feuille ; ils vont être remplacés par ceux de la feuille ${idx+1}.</p>`,'Changer'))return;
+  await applyDocPage(idx)}
+$('#dprevb').onclick=()=>act(()=>docGo(DOC.idx-1));$('#dnextb').onclick=()=>act(()=>docGo(DOC.idx+1));
+$('#dquit').onclick=()=>docRelease();
+$('#dset').onclick=()=>act(async()=>{const res=await docDialog(DOC.info,DOC.opts,DOC.idx);if(!res)return;
+  if(docSig()!==DOC.sig&&!await ask('Appliquer les réglages ?','<p>Les objets du document que tu as modifiés seront remplacés.</p>','Appliquer'))return;
+  DOC.opts=res.o;docPrefs(res.o,DOC.info);
+  await applyDocPage(res.page)});
+$('#dall').onclick=()=>act(async()=>{
+  if(!ST.connected){toast('Connecte la machine (ou lance la Simulation) d’abord.',true);return}
+  const N=DOC.n,start=DOC.idx;
+  for(let i=start;i<N;i++){if(i!==start)await applyDocPage(i);const g=curGroupsOrWarn();if(!g)return;
+    const ok=await startRun({groups:g,name:`${DOC.name} — feuille ${i+1}/${N}`},`<p><b>Document</b> : ${N-i} feuille${N-i>1?'s':''} à tracer, de la ${i+1} à la ${N}. Après chaque feuille, l’app te laissera changer le papier.</p><p class=hint>${$('#sumtxt').textContent}</p>`,{noConfirm:i>start});
+    if(!ok)return;const st=await waitJob();if(st!=='done'){toast('Tracé du document interrompu.',true);return}
+    if(i<N-1&&!await ask(`Feuille ${i+2} / ${N}`,'<p>Place la <b>feuille suivante</b> (même position), vérifie le point zéro puis continue.</p>',`▶ Tracer la feuille ${i+2}`,'Arrêter ici'))return}
+  toast('Document terminé.')});
+
+/* ───── bibliothèque de formes et de dessins ───── */
+let LIB={gens:{},items:[]},LIBCAT='Tous';
+async function loadLib(){LIB=await api('/lib');renderLib()}
+function thumb(d){const pv=d.preview||[],W=d.w||10,H=d.h||10,pad=Math.max(W,H)*.08+.5;
+  const path=pv.map(pl=>'M'+pl.map(q=>q[0]+' '+q[1]).join('L')).join('');
+  return `<svg viewBox="${-W/2-pad} ${-H/2-pad} ${W+2*pad} ${H+2*pad}" preserveAspectRatio="xMidYMid meet"><path d="${path}" fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function renderLib(){const q=($('#libq').value||'').trim().toLowerCase();
+  const cats=['Tous',...new Set(LIB.items.map(i=>i.cat))];if(!cats.includes(LIBCAT))LIBCAT='Tous';
+  $('#libcats').innerHTML=cats.map(c=>`<span class="chip ${c===LIBCAT?'on':''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
+  $('#libcats').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{LIBCAT=el.dataset.c;renderLib()});
+  const items=LIB.items.filter(i=>(LIBCAT==='Tous'||i.cat===LIBCAT)&&(!q||(i.name+' '+i.cat).toLowerCase().includes(q)));
+  $('#libgrid').innerHTML=items.map(d=>`<div class="libcard" data-id="${esc(d.id)}"><div class="lt">${thumb(d)}</div><div class="ln"><b title="${esc(d.name)}">${esc(d.name)}</b><span class=hint>${esc(d.cat)} · ${d.w} × ${d.h} mm${d.builtin?'':' · perso'}</span></div>
+    <div class="la"><button data-a=ins>Insérer</button>${d.builtin?'<button class=sec data-a=dup title="Copie modifiable dans Mes dessins">Dupliquer</button>':'<button class=sec data-a=edit>Modifier…</button><button class=sec data-a=del style="color:var(--err)">Supprimer</button>'}</div></div>`).join('')||'<div class=hint>Rien ne correspond.</div>';
+  $('#libgrid').querySelectorAll('.libcard').forEach(card=>{const d=LIB.items.find(i=>i.id===card.dataset.id);
+    card.querySelector('[data-a=ins]').onclick=()=>act(()=>insertLib(d));card.querySelector('.lt').ondblclick=()=>act(()=>insertLib(d));
+    const dup=card.querySelector('[data-a=dup]');if(dup)dup.onclick=()=>act(()=>dupLib(d));
+    const ed=card.querySelector('[data-a=edit]');if(ed)ed.onclick=()=>act(()=>editLib(d));
+    const dl=card.querySelector('[data-a=del]');if(dl)dl.onclick=()=>act(async()=>{if(!await ask('Supprimer de la bibliothèque',`<p>Supprimer « ${esc(d.name)} » ? Les objets déjà placés dans une composition ne sont pas touchés.</p>`,'Supprimer'))return;await api('/lib/delete',{id:d.id});await loadLib()})});
+  $('#libinfo').textContent=`${LIB.items.length} éléments (${LIB.items.filter(i=>!i.builtin).length} à toi). Double-clic = insérer. Les formes à paramètres se règlent ensuite dans le panneau de la composition.`}
+$('#libq').oninput=renderLib;
+async function insertLib(d){tab('compose');
+  const it=newItem('shape',{name:d.name,p:d.kind==='param'?{gen:d.gen,...d.params}:{lib:d.id}},true);
+  await vectorize(it);const[pw,ph]=paperDims(),m=Math.min(pw,ph)*.8,big=Math.max(it.w,it.h);if(big>m)it.scale=m/big;
+  select(it);draw();commit(true)}
+const askCats=()=>[...new Set(LIB.items.map(i=>i.cat))].map(c=>`<option value="${esc(c)}">`).join('');
+async function askNameCat(title,name,cat){
+  const ok=await ask(title,`<div class=row><label>Nom</label><input id=lname value="${esc(name)}" style="flex:1"></div><div class=row><label>Catégorie</label><input id=lcat list=lcats value="${esc(cat)}" style="flex:1"><datalist id=lcats>${askCats()}</datalist></div>`,'Enregistrer');
+  return ok?{name:$('#lname').value.trim()||name,cat:$('#lcat').value.trim()||cat}:null}
+async function ensureLib(){if(!LIB.items.length)LIB=await api('/lib')}
+const libPathsOf=it=>finalPaths(it).map(p=>p.map(([x,y])=>[+(x-it.cx).toFixed(3),+(y-it.cy).toFixed(3)]));
+async function saveToLibrary(it){await ensureLib();const r=await askNameCat('Ajouter à la bibliothèque',it.name||'Mon dessin','Mes dessins');if(!r)return;
+  const param=it.type==='shape'&&it.p.gen&&Math.abs(it.scale-1)<1e-6&&!it.rot;
+  const body=param?{...r,gen:it.p.gen,params:Object.fromEntries(Object.entries(it.p).filter(([k])=>k!=='gen'))}:{...r,paths:libPathsOf(it)};
+  await api('/lib/save',body);await loadLib().catch(()=>{});toast('Ajouté à la bibliothèque.')}
+$('#libFromComp').onclick=()=>act(async()=>{await ensureLib();const vis=ITEMS.filter(i=>i.vis&&i.paths.length);if(!vis.length){toast('Aucun objet visible dans la composition.',true);return}
+  const all=vis.flatMap(finalPaths);let L=1e9,R=-1e9,T=1e9,B=-1e9;all.forEach(p=>p.forEach(([x,y])=>{L=Math.min(L,x);R=Math.max(R,x);T=Math.min(T,y);B=Math.max(B,y)}));
+  const cx=(L+R)/2,cy=(T+B)/2,r=await askNameCat('Enregistrer la composition comme dessin','Ma composition','Mes dessins');if(!r)return;
+  await api('/lib/save',{...r,paths:all.map(p=>p.map(([x,y])=>[+(x-cx).toFixed(3),+(y-cy).toFixed(3)]))});await loadLib();toast('Dessin enregistré.')});
+$('#libFromSvg').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.svg,image/svg+xml';i.onchange=()=>act(async()=>{const f=i.files[0];if(!f)return;await ensureLib();
+  const up=await fetch('/api/upload?kind=svg',{method:'POST',headers:{'X-Filename':encodeURIComponent(f.name)},body:f}).then(r=>r.json());
+  const v=await api('/vec/svg',{id:up.id});if(!v.paths.length){toast('Aucun tracé exploitable dans ce SVG.',true);return}
+  const r=await askNameCat('Ajouter ce SVG à la bibliothèque',f.name.replace(/\.svg$/i,''),'Mes dessins');if(!r)return;
+  await api('/lib/save',{...r,paths:v.paths});await loadLib();toast('SVG ajouté à la bibliothèque.')});i.click()};
+async function dupLib(d){const r=await askNameCat('Dupliquer dans Mes dessins',d.name+' (copie)','Mes dessins');if(!r)return;
+  await api('/lib/save',{...r,gen:d.gen,params:d.params});await loadLib();LIBCAT=r.cat;renderLib();toast('Copie créée : tu peux la modifier.')}
+async function editLib(d){await ensureLib();const sc=d.kind==='param'?LIB.gens[d.gen]:null;
+  const ok=await ask('Modifier « '+d.name+' »',`<div class=row><label>Nom</label><input id=lname value="${esc(d.name)}" style="flex:1"></div>
+    <div class=row><label>Catégorie</label><input id=lcat list=lcats value="${esc(d.cat)}" style="flex:1"><datalist id=lcats>${askCats()}</datalist></div>
+    ${sc?sc.params.map(q=>`<div class=row><label>${esc(q.label)}</label><input type=number id=lp_${q.k} value="${(d.params||{})[q.k]??q.def}" min=${q.min} max=${q.max} step=${q.step}><span class=hint>${esc(q.unit)}</span></div>`).join(''):'<div class=row><label></label><label class=hint style="width:auto"><input type=checkbox id=lrep> remplacer le dessin par l’objet sélectionné dans la composition</label></div>'}`,'Enregistrer');
+  if(!ok)return;const body={id:d.id,name:$('#lname').value.trim()||d.name,cat:$('#lcat').value.trim()||d.cat};
+  if(sc){body.gen=d.gen;body.params=Object.fromEntries(sc.params.map(q=>[q.k,+$('#lp_'+q.k).value]))}
+  else if($('#lrep')&&$('#lrep').checked){const it=sel();if(!it){toast('Sélectionne d’abord un objet dans la composition.',true);return}body.paths=libPathsOf(it)}
+  await api('/lib/save',body);await loadLib();toast('Enregistré.')}
+
+let PR=null;
+$('#prDraw').onclick=()=>{const S0=+$('#prS').value,st=+$('#prStep').value,n=+$('#prN').value;
+  if(!(S0>=0&&S0<=1000&&st>=1&&n>=2&&n<=12)){toast('Valeurs invalides.',true);return}
+  const vals=Array.from({length:n},(_,k)=>Math.min(1000,S0+k*st)),dw=dwellS();let g=['G21','G90','G94','M5',`G4 P${dw}`];
+  vals.forEach((v,k)=>{g.push(gl(0,k*8,CFG.travel_feed),`M3 S${v}`,`G4 P${dw}`,gl(25,k*8,CFG.draw_feed),'M5',`G4 P${dw}`)});g.push(gl(0,0,CFG.travel_feed),'M5');
+  PR=vals;startRun({gcode:g.join('\n')+'\n',name:'Test de pression'},`<p>${n} traits de 25 mm, espacés de 8 mm vers toi, avec S = ${vals.join(', ')}.</p>`).then(started=>{
+    if(started){$('#prRes').innerHTML='Du plus loin au plus proche de toi : '+vals.map((v,i)=>`<b>${i+1}</b> = S${v}`).join(' · ');
+      $('#prSel').innerHTML=vals.map((v,i)=>`<option value=${v}>n°${i+1} (S${v})</option>`).join('');$('#prPick').style.display='';$('#prPick2').style.display=''}})};
+$('#prUse').onclick=()=>{const v=+$('#prSel').value,t=$('#prTarget').value;if(t==='g'){saveCfg({pen_down_s:v});toast('Stylo baissé (tous les stylos) : S'+v)}else{CFG.pens[+t].s=v;saveCfg({pens:CFG.pens});renderPensEditor();toast(`${CFG.pens[+t].name} : S${v}`)}fillSettings()};
+
+/* ───── démarrage ───── */
+(async()=>{
+  CFG=await api('/settings');FONTS=(await api('/fonts')).fonts;try{LIB=await api('/lib')}catch(e){}fillSettings();
+  const u=CFG.ui||{};step=+u.step||1;$$('#steps .chip').forEach(c=>c.classList.toggle('on',+c.dataset.s===step));
+  await loadPorts();stage.fit();gstage.fit();updInfo();renderItems();commit(true);updHist();
+  if(u.tab&&u.tab!=='compose')tab(u.tab);
+})();
+</script>

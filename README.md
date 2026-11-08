@@ -82,7 +82,7 @@ Tout est détaillé dans les [fonctionnalités](docs/FONCTIONNALITES.md). Un doc
   D'autres traceuses GRBL avec un servo de stylo similaire devraient marcher en ajustant les réglages ; sans garantie.
 - **Ordinateur** : macOS 14+ sur Apple Silicon. Pas de version Windows, Linux ni Intel pour l'instant.
 - **Limites connues** : la machine n'a ni fins de course ni retour de position (GRBL ne sait pas si un moteur a vraiment bougé) ; les butées de l'app sont des butées virtuelles mesurées depuis le zéro.
-  Word : pas d'en-têtes/pieds de page, zones de texte, notes de bas de page ; PDF scannés : seules les images sont dessinées.
+  Word : pas de zones de texte ni de notes de bas de page, en-tête et pied de page limités au texte (pas d'images) ; PDF scannés : seules les images sont dessinées.
 
 ## Construire depuis les sources
 
@@ -92,7 +92,7 @@ Il faut un Mac Apple Silicon, `clang` (outils en ligne de commande Xcode) et une
 git clone https://github.com/Wudstyz/VG-X4.git
 cd VG-X4
 ./build_app.sh      # fabrique « Atelier Traceuse.app » (Python embarqué, vérifié par SHA-256)
-./make_dmg.sh       # fabrique dist/Atelier-Traceuse-1.1-macOS-arm64.dmg
+./make_dmg.sh       # fabrique dist/Atelier-Traceuse-1.2-macOS-arm64.dmg
 ```
 
 Pour développer sans reconstruire l'app :

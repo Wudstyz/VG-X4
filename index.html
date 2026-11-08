@@ -1310,7 +1310,7 @@ const DOC={on:false,tok:null,id:null,info:null,name:'',opts:null,idx:0,n:1,sig:'
 const DOCDEF={font:'scripts',size:4,line_spacing:1.7,reflow:true,images:true,img_w:80,img_mode:'contour'};
 const IMG_MODES=[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']];
 const docSig=()=>JSON.stringify(ITEMS.filter(i=>i.doc===DOC.tok).map(i=>[i.id,+i.cx.toFixed(2),+i.cy.toFixed(2),i.rot,i.scale,i.vis,i.pen||0,i.p]));
-const docReq=(id,o,page)=>({id,font:o.font,size:o.size,line_spacing:o.line_spacing,letter_spacing:0,gap:.6,reflow:o.reflow,breaks:o.breaks,tables:o.tables!==false,images:o.images,img_w:o.img_w,rotate:o.rotate||0,margin:o.margin,paper_w:paperDims()[0],paper_h:paperDims()[1],page});
+const docReq=(id,o,page)=>({id,font:o.font,size:o.size,line_spacing:o.line_spacing,letter_spacing:0,gap:.6,reflow:o.reflow,breaks:o.breaks,tables:o.tables!==false,hf:o.hf!==false,images:o.images,img_w:o.img_w,rotate:o.rotate||0,margin:o.margin,paper_w:paperDims()[0],paper_h:paperDims()[1],page});
 const docBlob=async i=>{if(!DOC.blobs.has(i))DOC.blobs.set(i,await fetch(`/api/doc/img?id=${DOC.id}&i=${i}`).then(r=>r.blob()));return DOC.blobs.get(i)};
 function docPreview(cv,L,o,id,redraw){const[pw,ph]=paperDims(),w=Math.max(200,cv.clientWidth),h=Math.round(w*ph/pw),dpr=window.devicePixelRatio||1,s=w/pw;
   cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
@@ -1337,6 +1337,7 @@ async function docDialog(j,o0,page0){
     <label class=chk><input type=checkbox id=dbreaks> Un saut de page du document = une nouvelle feuille</label>
     <div class=row><label>Sens du texte</label><select id=drot style="flex:1;max-width:190px"><option value=0>Normal (haut en haut)</option><option value=90>Tourné : haut à droite, bas à gauche</option><option value=270>Tourné : haut à gauche, bas à droite</option><option value=180>Tête en bas</option></select></div>
     ${j.tables?`<label class=chk><input type=checkbox id=dtables> Garder les tableaux (quadrillage et colonnes)</label>`:''}
+    ${(j.header||j.footer)?`<label class=chk><input type=checkbox id=dhf> Écrire l'${j.header&&j.footer?'en-tête et le pied de page':j.header?'en-tête':'pied de page'} sur chaque feuille</label>`:''}
     ${j.images?`<label class=chk><input type=checkbox id=dimgs> Dessiner les images</label>
       <div class=row id=dimgrow><label>Largeur images</label><input type=number id=dimgw min=10 max=300 step=5 style="width:70px"><span class=hint>mm au maximum</span></div>
       <div class=row id=dimgrow2><label>Mode images</label><select id=dimgm style="flex:1;max-width:190px">${IMG_MODES.map(([v,t])=>`<option value=${v}>${t}</option>`).join('')}</select></div>`:''}
@@ -1346,7 +1347,7 @@ async function docDialog(j,o0,page0){
   const box=$('#modal .box');box.classList.add('wide');
   const pr=ask('Écrire ce document',html,'Mettre en page et ajouter','Annuler');
   const g=id=>$('#'+id);
-  g('dfont').value=o.font;g('dsize').value=o.size;g('dls').value=o.line_spacing;g('dlsv').textContent=o.line_spacing;g('dmargin').value=o.margin;g('dreflow').checked=o.reflow;g('dbreaks').checked=o.breaks;g('drot').value=o.rotate||0;if(j.tables)g('dtables').checked=o.tables!==false;
+  g('dfont').value=o.font;g('dsize').value=o.size;g('dls').value=o.line_spacing;g('dlsv').textContent=o.line_spacing;g('dmargin').value=o.margin;g('dreflow').checked=o.reflow;g('dbreaks').checked=o.breaks;g('drot').value=o.rotate||0;if(j.tables)g('dtables').checked=o.tables!==false;if(j.header||j.footer)g('dhf').checked=o.hf!==false;
   if(j.images){g('dimgs').checked=o.images;g('dimgw').value=o.img_w;g('dimgm').value=o.img_mode}
   const sync=()=>{if(j.images){const on=g('dimgs').checked;g('dimgrow').style.opacity=g('dimgrow2').style.opacity=on?1:.4}};sync();
   const paint=()=>{if(last)docPreview(g('dcv'),last,o,j.id,paint)};
@@ -1357,7 +1358,7 @@ async function docDialog(j,o0,page0){
     catch(e){if(my===seq)g('dmsg').textContent=e.message}},180)};
   const bind=(id,fn)=>{g(id).addEventListener('input',()=>{fn(g(id));sync();refresh()});g(id).addEventListener('change',()=>{fn(g(id));sync();refresh()})};
   bind('dfont',e=>o.font=e.value);bind('dsize',e=>o.size=Math.max(1.5,Math.min(30,+e.value||4)));bind('dls',e=>{o.line_spacing=+e.value;g('dlsv').textContent=e.value});
-  bind('dmargin',e=>o.margin=Math.max(0,Math.min(60,+e.value||0)));bind('dreflow',e=>o.reflow=e.checked);bind('dbreaks',e=>o.breaks=e.checked);bind('drot',e=>{o.rotate=+e.value;page=0});if(j.tables)bind('dtables',e=>o.tables=e.checked);
+  bind('dmargin',e=>o.margin=Math.max(0,Math.min(60,+e.value||0)));bind('dreflow',e=>o.reflow=e.checked);bind('dbreaks',e=>o.breaks=e.checked);bind('drot',e=>{o.rotate=+e.value;page=0});if(j.tables)bind('dtables',e=>o.tables=e.checked);if(j.header||j.footer)bind('dhf',e=>o.hf=e.checked);
   if(j.images){bind('dimgs',e=>o.images=e.checked);bind('dimgw',e=>o.img_w=Math.max(10,+e.value||80));bind('dimgm',e=>o.img_mode=e.value)}
   g('dpp').onclick=()=>{page--;refresh()};g('dpnx').onclick=()=>{page++;refresh()};
   const rs=()=>paint();window.addEventListener('resize',rs);refresh();

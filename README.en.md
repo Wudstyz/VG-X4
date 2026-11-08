@@ -82,7 +82,7 @@ A sample Word document is in [`examples/`](examples/demo.docx).
   Other GRBL plotters with a similar pen servo should work after adjusting the settings; no guarantee.
 - **Computer**: macOS 14+ on Apple Silicon. No Windows, Linux or Intel build for now.
 - **Known limits**: the machine has no limit switches and no position feedback (GRBL cannot tell whether a motor really moved); the app's limits are virtual, measured from zero.
-  Word: no headers/footers, text boxes or footnotes; scanned PDFs: only the images are drawn.
+  Word: no text boxes or footnotes, header and footer limited to text (no images); scanned PDFs: only the images are drawn.
 
 ## Build from source
 
@@ -92,7 +92,7 @@ You need an Apple Silicon Mac, `clang` (Xcode command line tools) and an Interne
 git clone https://github.com/Wudstyz/VG-X4.git
 cd VG-X4
 ./build_app.sh      # builds "Atelier Traceuse.app" (embedded Python, SHA-256 verified)
-./make_dmg.sh       # builds dist/Atelier-Traceuse-1.1-macOS-arm64.dmg
+./make_dmg.sh       # builds dist/Atelier-Traceuse-1.2-macOS-arm64.dmg
 ```
 
 To develop without rebuilding the app:

@@ -36,6 +36,7 @@ class Extract:
         self.images = []        # {"png": bytes, "w": px, "h": px}
         self.by_hash = {}
         self.skipped = 0
+        self.hf = {}            # en-tête / pied de page : {"header": rows, "footer": rows, "first": bool, ...}
 
     def text(self, t, kind="p", level=0, keep=False, bullet=False):
         t = _clean(t).strip("\n ")
@@ -90,6 +91,99 @@ class Extract:
             return False
         self.blocks.append({"t": "img", "i": i})
         return True
+
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+
+def _para_cells(p_el):
+    """Texte d'un paragraphe d'en-tête / pied de page, découpé aux tabulations.
+    Les champs PAGE et NUMPAGES deviennent {PAGE} et {PAGES} (remplacés à la mise en page)."""
+    cells, cur = [], [""]
+    fld = None                      # champ complexe en cours : {"instr", "phase"}
+    skip_ids = set()
+
+    def put(t):
+        cur[0] += t
+
+    for el in p_el.iter():
+        if id(el) in skip_ids:
+            continue
+        t = el.tag.rsplit("}", 1)[-1]
+        if t == "fldSimple":
+            instr = (el.get(f"{{{W_NS}}}instr") or "").upper()
+            for sub in el.iter():
+                if sub is not el:
+                    skip_ids.add(id(sub))
+            if "NUMPAGES" in instr:
+                put("{PAGES}")
+            elif "PAGE" in instr:
+                put("{PAGE}")
+            else:
+                put("".join(el.itertext()))
+        elif t == "fldChar":
+            typ = el.get(f"{{{W_NS}}}fldCharType")
+            if typ == "begin":
+                fld = {"instr": "", "phase": "instr"}
+            elif typ == "separate" and fld:
+                fld["phase"] = "result"
+                ins = fld["instr"].upper()
+                if "NUMPAGES" in ins:
+                    put("{PAGES}"); fld["skip"] = True
+                elif "PAGE" in ins:
+                    put("{PAGE}"); fld["skip"] = True
+            elif typ == "end":
+                fld = None
+        elif t == "instrText":
+            if fld is not None:
+                fld["instr"] += el.text or ""
+        elif t == "t":
+            if fld is not None and (fld["phase"] == "instr" or fld.get("skip")):
+                continue
+            put(el.text or "")
+        elif t in ("tab", "ptab"):
+            if fld is not None and fld.get("skip"):
+                continue
+            cells.append(cur[0]); cur[0] = ""
+        elif t in ("br", "cr"):
+            put("\n")
+    cells.append(cur[0])
+    cells = [_clean(c).strip() for c in cells]
+    while cells and not cells[-1]:
+        cells.pop()
+    return cells
+
+
+def _hf_rows(part):
+    """Lignes d'un en-tête ou pied de page Word : [{"cells": [texte…], "align": "left|center|right"}]."""
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+    rows = []
+    try:
+        if part.is_linked_to_previous:
+            return rows
+        for child in part._element.iterchildren():
+            tag = child.tag.rsplit("}", 1)[-1]
+            if tag == "p":
+                al = {0: "left", 1: "center", 2: "right"}.get(int(Paragraph(child, part).alignment or 0), "left")
+                cells = _para_cells(child)
+                if any(cells):
+                    rows.append({"cells": cells, "align": al})
+            elif tag == "tbl":
+                tbl = Table(child, part)
+                for tr in tbl._tbl.tr_lst:
+                    cells = []
+                    for tc in tr.tc_lst:
+                        txt = " ".join(c for pp in tc.iterchildren() if pp.tag.rsplit("}", 1)[-1] == "p"
+                                       for c in _para_cells(pp) if c)
+                        cells.append(_clean(txt).strip())
+                    while cells and not cells[-1]:
+                        cells.pop()
+                    if any(cells):
+                        rows.append({"cells": cells, "align": "left", "table": True})
+    except Exception:
+        return []
+    return rows
 
 
 def extract_docx(data):
@@ -173,6 +267,14 @@ def extract_docx(data):
             except Exception:
                 pass
             ex.table(grid, rows, frac)
+    try:
+        sec = d.sections[0]
+        first = bool(sec.different_first_page_header_footer)
+        ex.hf = {"header": _hf_rows(sec.header), "footer": _hf_rows(sec.footer), "first": first,
+                 "first_header": _hf_rows(sec.first_page_header) if first else None,
+                 "first_footer": _hf_rows(sec.first_page_footer) if first else None}
+    except Exception:
+        ex.hf = {}
     return ex
 
 
@@ -329,11 +431,67 @@ def _prepare(block, reflow):
     return t
 
 
+HF_SCALE = 0.7          # taille des lettres de l'en-tête / pied de page par rapport au texte
+
+
+def _hf_cells(row, W):
+    """Répartit les cellules d'une ligne : [(texte, alignement, largeur max)]."""
+    c = [x for x in row["cells"]]
+    if len(c) <= 1:
+        return [(c[0] if c else "", row.get("align", "left"), W)]
+    if len(c) == 2:
+        return [(c[0], "left", W * 0.48), (c[1], "right", W * 0.48)]
+    rest = " ".join(x for x in c[2:] if x)
+    return [(c[0], "left", W * 0.32), (c[1], "center", W * 0.32), (rest, "right", W * 0.32)]
+
+
+def _hf_layout(rows, o, hs):
+    """Hauteur de chaque ligne d'en-tête / pied de page (mm)."""
+    out = []
+    for r in rows:
+        n = 1
+        for txt, al, mw in _hf_cells(r, o["W"]):
+            t = txt.replace("{PAGES}", "00").replace("{PAGE}", "00")
+            if t.strip():
+                n = max(n, len(vec.wrap_lines(t, o["font"], hs, o["letter_spacing"], max(5.0, mw))))
+        out.append({"row": r, "h": hs * 1.35 + (n - 1) * hs * 1.5})
+    return out
+
+
+def _hf_zone(ex, o, zone, idx):
+    """Lignes à écrire pour la zone 'header' ou 'footer' sur la feuille idx (la première peut être différente)."""
+    hf = getattr(ex, "hf", None) or {}
+    if not o.get("hf", True) or not hf:
+        return []
+    if idx == 0 and hf.get("first"):
+        return hf.get("first_" + zone) or []
+    return hf.get(zone) or []
+
+
+def _hf_metrics(ex, o):
+    """Place réservée en haut (hh) et en bas (fh) de chaque feuille."""
+    hs = o["size"] * HF_SCALE
+    hf = getattr(ex, "hf", None) or {}
+    if not o.get("hf", True) or not hf:
+        return 0.0, 0.0, hs
+    def need(zone):
+        best = 0.0
+        for rows in (hf.get(zone), hf.get("first_" + zone)):
+            if rows:
+                best = max(best, sum(x["h"] for x in _hf_layout(rows, o, hs)))
+        return best + (hs * 1.8 if best else 0.0)
+    hh, fh = need("header"), need("footer")
+    if o["H"] - hh - fh < 20:
+        return 0.0, 0.0, hs
+    return hh, fh, hs
+
+
 def paginate(ex, o):
     """Place les blocs sur des feuilles. Retourne une liste de feuilles ; chaque feuille est une liste d'éléments
     {"k": "text", "text", "size", "y" (haut de la ligne, mm depuis la marge), "n" lignes}
     ou {"k": "img", "i", "w", "h", "y"}."""
-    W, H = o["W"], o["H"]
+    hh, fh, _hs = _hf_metrics(ex, o)
+    W, H = o["W"], o["H"] - hh - fh
     size, ls = o["size"], o["line_spacing"]
     gap = size * o["gap"]
     pages, cur = [], []
@@ -497,19 +655,50 @@ def _render_table(e, o, missing):
             "w": round(x1 - x0, 2), "h": round(y1 - y0, 2), "paths": cen}
 
 
+def _render_hf(ex, o, idx, total, hh, fh, hs, missing):
+    """Textes de l'en-tête et du pied de page de la feuille idx."""
+    m, W, items = o["margin"], o["W"], []
+    for zone in ("header", "footer"):
+        lay = _hf_layout(_hf_zone(ex, o, zone, idx), o, hs)
+        if not lay:
+            continue
+        y = 0.0 if zone == "header" else o["H"] - sum(x["h"] for x in lay)
+        for x in lay:
+            for txt, al, mw in _hf_cells(x["row"], W):
+                txt = txt.replace("{PAGES}", str(total)).replace("{PAGE}", str(idx + 1))
+                if not txt.strip():
+                    continue
+                paths, miss = vec.text_to_paths(txt, o["font"], hs, 1.5, o["letter_spacing"], "left", 0, 0, max(5.0, mw), 1, 0, 0, 0, raw=True)
+                missing.update(miss)
+                if not paths:
+                    continue
+                x0, y0, x1, y1 = vec.bbox(paths)
+                w = x1 - x0
+                cx_sheet = {"left": w / 2, "center": W / 2, "right": W - w / 2}[al]
+                cx, cy = x0 / 2 + x1 / 2, y0 / 2 + y1 / 2
+                cen = [[(px - cx, py - cy) for px, py in p] for p in paths]
+                items.append({"kind": "text", "text": txt, "size": round(hs, 3), "head": False,
+                              "cx": round(m + cx_sheet, 2), "cy": round(m + y + hs + cy, 2), "w": round(w, 2), "h": round(y1 - y0, 2),
+                              "paths": [[[round(px, 2), round(py, 2)] for px, py in p] for p in cen]})
+            y += x["h"]
+    return items
+
+
 def render_page(ex, pages, idx, o):
     """Géométrie réelle d'une feuille (positions en mm sur le papier, marge comprise)."""
     idx = max(0, min(idx, len(pages) - 1))
-    m = o["margin"]
+    hh, fh, hs = _hf_metrics(ex, o)
+    m = o["margin"] + hh                      # le texte commence sous l'en-tête
     items, missing = [], set()
     for e in pages[idx]:
         if e["k"] == "img":
             items.append({"kind": "image", "i": e["i"], "w": round(e["w"], 2), "h": round(e["h"], 2),
-                          "cx": round(m + o["W"] / 2, 2), "cy": round(m + e["y"] + e["h"] / 2, 2)})
+                          "cx": round(o["margin"] + o["W"] / 2, 2), "cy": round(m + e["y"] + e["h"] / 2, 2)})
             continue
         if e["k"] == "tbl":
-            it = _render_table(e, o, missing)
+            it = _render_table(e, {**o, "margin": o["margin"]}, missing)
             if it:
+                it["cy"] = round(it["cy"] + hh, 2)
                 items.append(it)
             continue
         paths, miss = vec.text_to_paths(e["text"], o["font"], e["size"], o["line_spacing"], o["letter_spacing"],
@@ -522,8 +711,10 @@ def render_page(ex, pages, idx, o):
         cx, cy = x0 / 2 + x1 / 2, y0 / 2 + y1 / 2
         cen = [[(x - cx, y - cy) for x, y in p] for p in paths]
         items.append({"kind": "text", "text": e["text"], "size": round(e["size"], 3), "head": e["head"],
-                      "cx": round(m + cx, 2), "cy": round(m + base + cy, 2), "w": round(x1 - x0, 2), "h": round(y1 - y0, 2),
+                      "cx": round(o["margin"] + cx, 2), "cy": round(m + base + cy, 2), "w": round(x1 - x0, 2), "h": round(y1 - y0, 2),
                       "paths": [[[round(x, 2), round(y, 2)] for x, y in p] for p in cen]})
+    if hh or fh:
+        items += _render_hf(ex, o, idx, len(pages), hh, fh, hs, missing)
     rot = int(o.get("rotate", 0)) % 360
     if rot:                                    # mise en page faite sur un papier tourné, puis remise à plat
         pw, ph = o["pw"], o["ph"]

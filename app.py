@@ -536,6 +536,7 @@ def route(method, path, q, body, headers):
                 docs.pop(next(iter(docs)))
             return {"id": uid, "name": name, "kind": dkind, "paragraphs": len(texts), "images": nimg,
                     "unique_images": len(ex.images), "skipped": ex.skipped, "tables": ntab,
+                    "header": bool((ex.hf.get("header") or ex.hf.get("first_header"))), "footer": bool((ex.hf.get("footer") or ex.hf.get("first_footer"))),
                     "chars": sum(len(b["text"]) for b in texts) + sum(len(c["text"]) for b in ex.blocks if b["t"] == "tbl" for r in b["rows"] for c in r),
                     "preview": "\n\n".join(b["text"] for b in texts)[:1200],
                     "src_pages": getattr(ex, "pdf_pages", 0)}
@@ -565,7 +566,7 @@ def route(method, path, q, body, headers):
         o = {"font": str(P("font", "scripts")), "size": max(1.0, float(P("size", 4))),
              "line_spacing": max(1.0, float(P("line_spacing", 1.7))), "letter_spacing": float(P("letter_spacing", 0)),
              "gap": max(0.0, float(P("gap", 0.6))), "reflow": bool(P("reflow", True)), "breaks": bool(P("breaks", True)),
-             "tables": bool(P("tables", True)), "images": bool(P("images", True)), "img_w": max(10.0, float(P("img_w", 80))), "margin": margin,
+             "tables": bool(P("tables", True)), "hf": bool(P("hf", True)), "images": bool(P("images", True)), "img_w": max(10.0, float(P("img_w", 80))), "margin": margin,
              "rotate": int(P("rotate", 0)) % 360 // 90 * 90}
         pw, ph = float(P("paper_w", 297)), float(P("paper_h", 210))
         vw, vh = (ph, pw) if o["rotate"] in (90, 270) else (pw, ph)     # papier « virtuel » sur lequel on met en page

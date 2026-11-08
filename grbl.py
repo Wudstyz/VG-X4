@@ -290,6 +290,7 @@ class Machine:
         self.cont_event = threading.Event()
         self.grbl_cfg = {}
         self.job_full = None; self.job_parsed = None; self.job_off = None; self.job_base_name = ""
+        self.trail = []; self.trail_id = 0; self._tf = None   # tracé réellement dessiné (suivi du programme)
         self.stop_pos = None; self.stop_waiting = False; self._ri_key = None; self._ri = None
         self.awake_proc = None; self.journal_path = None
         self.limit_m = {"x": None, "y": None}          # positions machine (brutes) des butées enregistrées
@@ -402,6 +403,9 @@ class Machine:
                         f, s = v.split(",")[:2]; self.feed = int(float(f)); self.spindle = int(float(s))
                 except ValueError:
                     pass
+            if self._tf is not None:
+                try: self._trail_feed()
+                except Exception: pass
             return
         ms = SETTING_RE.match(line)
         if ms:
@@ -657,6 +661,7 @@ class Machine:
         self.job = {"running": True, "paused": False, "total": len(lines), "sent": 0, "name": name,
                     "state": "running", "msg": "", "t0": time.time(), "est": est, "done_at": 0,
                     "npaths": npaths, "resumed": resume_from is not None, "waiting": "", "draw_mm": round(draw_mm)}
+        self._trail_init(lines, resume_from is not None, name)
         self._awake(True)
         threading.Thread(target=self._run_job, args=(list(lines),), daemon=True).start()
 
@@ -746,6 +751,9 @@ class Machine:
             except Exception:
                 pass
         finally:
+            try: self._trail_feed(final=True)
+            except Exception: pass
+            self._tf = None
             job["running"] = False; job["paused"] = False; job["waiting"] = ""; self.paused = False
             self._ri_key = None
             self._awake(False)
@@ -756,6 +764,61 @@ class Machine:
                 self._notify("Atelier Traceuse — tracé terminé", f"{job['name']} ({int(dur // 60)} min {int(dur % 60):02d} s)")
             elif job["state"] == "error":
                 self._notify("Atelier Traceuse — tracé interrompu", job.get("msg", "") or "erreur")
+
+    # ── tracé affiché : on suit le programme, pas seulement les relevés de position ──
+    def _trail_init(self, lines, resumed, name):
+        """Prépare le suivi : liste des déplacements (x0, y0, x1, y1, stylo, longueur) du programme."""
+        if not resumed and not re.match(r"(Alignement|Cadre|Essai)", name or ""):
+            self.trail = []; self.trail_id += 1
+        pts, mot, _ = parse_job(lines)
+        px, py = self.wpos(); pen = False; mv = []
+        for i, l in enumerate(lines):
+            u = l.upper()
+            if re.search(r"\bM0?[34]\b", u): pen = True
+            elif re.search(r"\bM0?5\b", u): pen = False
+            if mot[i]:
+                x, y = pts[i]
+                mv.append((px, py, x, y, pen, math.hypot(x - px, y - py)))
+                px, py = x, y
+        self._tf = {"mv": mv, "k": 0, "t": 0.0, "miss": 0}
+
+    def _trail_feed(self, final=False):
+        """Place la position de la machine sur le programme et ajoute au tracé les morceaux parcourus."""
+        tf = self._tf
+        if not tf:
+            return
+        mv = tf["mv"]; k, t = tf["k"], tf["t"]
+        if k >= len(mv):
+            return
+        wx, wy = self.wpos()
+        far = tf["miss"] >= 8 or final
+        best = None; acc = 0.0; i = k
+        while i < len(mv) and (far or acc < 60.0):
+            x0, y0, x1, y1, pen, L = mv[i]
+            tt = 1.0 if L < 1e-9 else ((wx - x0) * (x1 - x0) + (wy - y0) * (y1 - y0)) / (L * L)
+            tt = min(1.0, max(0.0, tt))
+            if i == k: tt = max(tt, t)
+            d = math.hypot(wx - (x0 + (x1 - x0) * tt), wy - (y0 + (y1 - y0) * tt))
+            if best is None or d < best[0] - 1e-6:
+                best = (d, i, tt)
+                if d < 1e-4 and not far: break
+            acc += L * (1.0 - (t if i == k else 0.0)); i += 1
+        if best is None or best[0] > 0.5:
+            tf["miss"] += 1
+            return
+        tf["miss"] = 0
+        _, bi, bt = best
+        out = self.trail
+        def pt(j, f):
+            x0, y0, x1, y1, pen, L = mv[j]
+            out.append([1 if pen else 0, round(x0 + (x1 - x0) * f, 2), round(y0 + (y1 - y0) * f, 2)])
+        if bi == k:
+            if bt > t: pt(k, bt)
+        else:
+            pt(k, 1.0)
+            for j in range(k + 1, bi): pt(j, 1.0)
+            if bt > 0: pt(bi, bt)
+        tf["k"], tf["t"] = bi, bt
 
     def continue_job(self):
         """Fin d'une pause « changement de stylo »."""
@@ -849,7 +912,7 @@ class Machine:
             self._log("info", "Reprise")
 
     # ── état pour l'interface ──
-    def snapshot(self, log_after=0.0):
+    def snapshot(self, log_after=0.0, trail_id=-1, trail_after=0):
         j = dict(self.job)
         j["elapsed"] = (time.time() - j["t0"]) if j["running"] else 0
         if j["running"] and self.job_parsed:
@@ -858,7 +921,11 @@ class Machine:
         wp = self.wpos()
         if self.get_cfg().get("invert_y"): wp[1] = -wp[1]
         if self.get_cfg().get("invert_x"): wp[0] = -wp[0]
-        return {"connected": self.connected, "sim": self.sim, "state": self.state, "firmware": self.firmware,
+        tr = self.trail; ta = trail_after if trail_id == self.trail_id and 0 <= trail_after <= len(tr) else 0
+        ix = -1 if self.get_cfg().get("invert_x") else 1; iy = -1 if self.get_cfg().get("invert_y") else 1
+        tp = [[p[0], p[1] * ix, p[2] * iy] for p in tr[ta:ta + 20000]]
+        return {"trail": {"id": self.trail_id, "n": ta + len(tp), "pts": tp},
+                "connected": self.connected, "sim": self.sim, "state": self.state, "firmware": self.firmware,
                 "mpos": [round(v, 3) for v in self.mpos], "wpos": [round(v, 3) for v in wp],
                 "spindle": self.spindle, "feed": self.feed, "alarm": self.alarm_msg, "zero_set": self.zero_set,
                 "job": j, "resume": self.resume_info(), "lost": self.lost, "reach": self.reach(), "grbl": dict(self.grbl_cfg),

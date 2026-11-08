@@ -35,7 +35,9 @@ Protocole machine (vérifié sur une VG-X4 réelle, firmware GRBL 1.1f) : 115200
 - **Jeu mécanique** : Test machine → mire (deux traits verticaux, deux horizontaux) ; la compensation enregistrée décale les consignes à chaque inversion de sens (appliquée au G-code envoyé, pas aux déplacements manuels).
 - **SVG multicolore** : à l'import, un objet et un stylo par couleur (calques parfaitement superposés).
 - **Images en tons de gris** : mode *Tons de gris*, hachures croisées de plus en plus denses.
+- **Dessins noir et blanc (manga, encre…)** : l'app repère une image en noir et blanc et coche *tracer les contours* et *remplir les noirs (hachures)* : les contours sont tracés et les zones noires sont remplies. Les deux cases sont indépendantes (contours seuls, remplissage seul, ou les deux). La case *hachures croisées* ajoute une seconde passe à 90° pour un noir plus dense (le tracé dure alors plus longtemps). Le format AVIF est lu en plus de PNG, JPEG, GIF, BMP, WebP et TIFF.
 - **Lignes d'un dessin ou d'une illustration** : mode *Lignes du dessin (détection)*, qui repère les vrais bords au lieu de couper selon un seuil noir/blanc (réglage *Détails* de 1 à 10). La case *Ignorer le fond flou et le cadre* garde les zones nettes (le personnage) et écarte le décor flou et le liseré de l'image.
+- **Tracé orange en direct** : pendant le tracé, l'aperçu affiche en orange le parcours réellement dessiné (courbes comprises), placé d'après la position annoncée par la machine.
 - **Répéter en grille** (colonnes × lignes, écarts, centrage) et **publipostage** CSV (`{colonne}` dans les textes, aperçu fiche par fiche, tracé de toutes les fiches avec pause pour changer la feuille).
 - **Bibliothèque** : 30 formes et dessins paramétrables (+ les tiens : depuis la composition, depuis un SVG, ou un objet de la composition), à renommer, modifier, dupliquer, supprimer. Stockée dans `~/Library/Application Support/VG-X4/library/`.
 
@@ -53,6 +55,7 @@ Bouton **＋ Document** (ou glisser un `.docx` / `.pdf` dans la fenêtre) : l'ap
 - **Sens du texte** : normal, tourné « haut à droite, bas à gauche » (document en portrait sur une feuille paysage), tourné « haut à gauche, bas à droite », ou tête en bas. La mise en page se fait sur le papier tourné, puis les objets reçoivent la rotation correspondante ; ce choix n'est pas mémorisé d'un document à l'autre.
 - Les objets de la feuille sont de vrais objets (texte, image) que l'on peut déplacer ou modifier. **◀ ▶** change de feuille (les modifications faites sur la feuille courante sont alors remplacées : l'app prévient) ; **Tracer toutes les feuilles** les enchaîne en proposant de changer le papier entre deux. **Quitter** garde la feuille affichée comme composition normale.
 - **Tableaux** : chaque tableau devient un seul objet « Tableau » (quadrillage + texte des cellules), répété avec sa ligne d'en-tête s'il continue sur la feuille suivante ; case « Garder les tableaux » décochée = une ligne de texte par rangée.
+- **Mots très longs (adresses web)** : un mot plus large que son cadre ou sa cellule est coupé en plusieurs lignes, de préférence après un `/`, un `-` ou un `_`, au lieu de dépasser de la feuille.
 - Caractères absents de la police (ex. ⌘, ×) : ignorés, la liste est affichée.
 - Dépendances : `python-docx`, `pypdf`, `pdfplumber` (dans `requirements.txt`).
 

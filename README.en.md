@@ -92,7 +92,7 @@ You need an Apple Silicon Mac, `clang` (Xcode command line tools) and an Interne
 git clone https://github.com/Wudstyz/VG-X4.git
 cd VG-X4
 ./build_app.sh      # builds "Atelier Traceuse.app" (embedded Python, SHA-256 verified)
-./make_dmg.sh       # builds dist/Atelier-Traceuse-1.2-macOS-arm64.dmg
+./make_dmg.sh       # builds dist/Atelier-Traceuse-1.3-macOS-arm64.dmg
 ```
 
 To develop without rebuilding the app:

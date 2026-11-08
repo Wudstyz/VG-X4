@@ -323,10 +323,21 @@ def wrap_lines(text, font="scripts", size=8.0, letter_spacing=0.0, max_width=0.0
             words, cur, first = raw.split(" "), "", True
             for w in words:
                 t = (cur + " " + w) if cur else w
-                if cur and _line_width(font, t, k, letter_spacing, missing) > max_width:
-                    lines.append((cur, first)); first = False; cur = w
-                else:
+                if _line_width(font, t, k, letter_spacing, missing) <= max_width:
                     cur = t
+                    continue
+                if cur:
+                    lines.append((cur, first)); first = False; cur = ""
+                # mot plus large que la ligne (URL, chemin, code…) : on le coupe, de préférence après / - _ . ? & = , ; :
+                while len(w) > 1 and _line_width(font, w, k, letter_spacing, missing) > max_width:
+                    n = 1
+                    while n < len(w) - 1 and _line_width(font, w[:n + 1], k, letter_spacing, missing) <= max_width:
+                        n += 1
+                    cut = max((i + 1 for i, c in enumerate(w[:n]) if c in "/-_.?&=,;:"), default=0)
+                    if cut >= n * 0.5 + 1:
+                        n = cut
+                    lines.append((w[:n], first)); first = False; w = w[n:]
+                cur = w
             lines.append((cur, first))
         else:
             lines.append((raw, True))
@@ -608,7 +619,7 @@ def otsu(gray):
 
 
 def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blob=0.5,
-                  smooth=0.6, simplify=0.05, spur=1.0, levels=4, edge=4, focus=False):
+                  smooth=0.6, simplify=0.05, spur=1.0, levels=4, edge=4, focus=False, cross=False):
     """gray : PIL L (0 noir … 255 blanc) à ppm pixels/mm. Retourne des polylignes en mm
     (origine = coin haut-gauche de l'image)."""
     from skimage import measure
@@ -625,6 +636,8 @@ def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blo
             out.append(pts)
     if mode in ("hatch", "both"):
         out += _hatch(a < threshold, ppm, hatch, angle, min_blob)
+        if cross:                                        # 2e passe à 90° : noir plus dense, plus uniforme
+            out += _hatch(a < threshold, ppm, hatch, (angle + 90.0) % 180.0, min_blob)
     if mode == "skeleton":
         out += _skeleton(a < threshold, ppm, spur, min_blob)
     if mode == "edges":
@@ -770,7 +783,7 @@ def _skeleton(mask, ppm, spur_mm, min_len):
 
 
 def image_to_paths(gray, width_mm, mode="contour", threshold=128, invert=False, hatch=0.5, angle=45.0,
-                   min_blob=0.5, simplify=0.05, smooth=0.6, max_px=2600, levels=4, edge=4, focus=False):
+                   min_blob=0.5, simplify=0.05, smooth=0.6, max_px=2600, levels=4, edge=4, focus=False, cross=False):
     """gray : image PIL 'L'. Retourne (paths centrés, w, h, info)."""
     if invert:
         gray = ImageOps.invert(gray)
@@ -783,7 +796,7 @@ def image_to_paths(gray, width_mm, mode="contour", threshold=128, invert=False, 
     w_px = max(8, int(round(width_mm * ppm))); h_px = max(8, int(round(width_mm * ar * ppm)))
     g = gray.resize((w_px, h_px), Image.LANCZOS)
     paths = mask_to_paths(g, w_px / width_mm, mode, threshold, hatch, angle, min_blob, smooth, simplify,
-                          levels=levels, edge=edge, focus=focus)
+                          levels=levels, edge=edge, focus=focus, cross=cross)
     paths = clean(paths, simplify, 0.05)
     if not paths:
         return [], 0.0, 0.0, {"ppm": round(ppm, 2)}

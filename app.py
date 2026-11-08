@@ -383,7 +383,7 @@ def route(method, path, q, body, headers):
     P = lambda k, d=None: body.get(k, d) if isinstance(body, dict) else d
     if method == "GET":
         if path == "/api/state":
-            return machine.snapshot(float(q.get("after", ["0"])[0]))
+            return machine.snapshot(float(q.get("after", ["0"])[0]), int(q.get("tid", ["-1"])[0]), int(q.get("ta", ["0"])[0]))
         if path == "/api/ports":
             return {"ports": grbl.list_serial_ports()}
         if path == "/api/settings":
@@ -519,7 +519,10 @@ def route(method, path, q, body, headers):
             except Exception as e:
                 raise ApiError(f"Image illisible : {e}")
             uploads[uid] = {"kind": "image", "name": name, "gray": gray}
-            return {"id": uid, "px_w": gray.width, "px_h": gray.height, "otsu": int(vec.otsu(gray))}
+            a = vec.np.asarray(gray)
+            dark = float((a < 128).mean()); extreme = float(((a < 64) | (a > 191)).mean())
+            bw = extreme > 0.7 and 0.06 < dark < 0.92          # dessin noir et blanc : les noirs sont pleins
+            return {"id": uid, "px_w": gray.width, "px_h": gray.height, "otsu": int(vec.otsu(gray)), "bw": bw}
         if kind == "doc":
             try:
                 ex, dkind = docimport.extract(data, name)
@@ -596,7 +599,7 @@ def route(method, path, q, body, headers):
             u["gray"], max(2.0, float(P("width", 100))), P("mode", "contour"), int(P("threshold", 128)),
             bool(P("invert", False)), float(P("hatch", 0.5)), float(P("angle", 45)), float(P("min_blob", 0.5)),
             float(cfg().get("simplify", 0.05)), float(P("smooth", 0.6)), levels=int(P("levels", 4)),
-            edge=float(P("edge", 4)), focus=bool(P("focus", False)))
+            edge=float(P("edge", 4)), focus=bool(P("focus", False)), cross=bool(P("cross", False)))
         return vec_response(paths, w, h, {"info": info})
     if path == "/api/gcode/build":
         groups, pens = parse_groups(P("groups", []))

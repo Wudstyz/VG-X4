@@ -92,7 +92,7 @@ Il faut un Mac Apple Silicon, `clang` (outils en ligne de commande Xcode) et une
 git clone https://github.com/Wudstyz/VG-X4.git
 cd VG-X4
 ./build_app.sh      # fabrique « Atelier Traceuse.app » (Python embarqué, vérifié par SHA-256)
-./make_dmg.sh       # fabrique dist/Atelier-Traceuse-1.2-macOS-arm64.dmg
+./make_dmg.sh       # fabrique dist/Atelier-Traceuse-1.3-macOS-arm64.dmg
 ```
 
 Pour développer sans reconstruire l'app :

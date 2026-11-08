@@ -506,7 +506,7 @@ class Stage{
     // zéro
     c.fillStyle=A2;c.beginPath();c.arc(this.ox,this.oy,5,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5;c.stroke();
     return c}
-  trail(c){if(!TRAIL.length)return;c.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--ac2').trim()||'#e8531f';c.lineWidth=Math.max(1.4,.6*this.k);c.lineJoin=c.lineCap='round';c.beginPath();for(const t of TRAIL){if(!t.pen||t.p.length<2)continue;const[x,y]=this.px(t.p[0][0],t.p[0][1]);c.moveTo(x,y);for(let i=1;i<t.p.length;i++)c.lineTo(...this.px(t.p[i][0],t.p[i][1]))}c.stroke()}
+  trail(c){if(TRAIL.length<2)return;c.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--ac2').trim()||'#e8531f';c.lineWidth=Math.max(1.4,.6*this.k);c.lineJoin=c.lineCap='round';c.beginPath();let pq=null,pd=false;for(const p of TRAIL){const q=this.px(p[1],p[2]);if(p[0]){if(!pd){const o=pq||q;c.moveTo(o[0],o[1])}c.lineTo(q[0],q[1]);pd=true}else pd=false;pq=q}c.stroke()}
   pen(c){if(!ST.connected||!ST.wpos)return;const[x,y]=this.px(ST.wpos[0],ST.wpos[1]);
     c.strokeStyle=ST.spindle>0?'#d70015':'#1a9d4b';c.lineWidth=2;c.beginPath();c.arc(x,y,6,0,7);c.moveTo(x-11,y);c.lineTo(x+11,y);c.moveTo(x,y-11);c.lineTo(x,y+11);c.stroke()}
 }
@@ -557,7 +557,7 @@ async function loadFile(f){
     const m=Math.min(CFG.paper_w,CFG.area_w)*.9,n2=Math.min(CFG.paper_h,CFG.area_h)*.9;
     if(it.w>m||it.h>n2){it.scale=Math.min(m/it.w,n2/it.h)}select(it);draw();commit(true);await splitSvgColors(it);return}
   if(/\.(docx?|pdf)$/.test(n)||f.type==='application/pdf'){await openDocument(f);return}
-  if(f.type.startsWith('image/')||/\.(png|jpe?g|gif|bmp|webp|tiff?)$/.test(n)){
+  if(f.type.startsWith('image/')||/\.(png|jpe?g|gif|bmp|webp|avif|tiff?)$/.test(n)){
     const it=await makeImageItem(f,f.name);renderInsp();vectorize(it);return}
   toast('Format non pris en charge : '+f.name,true)}
 async function makeImageItem(f,name,o={}){
@@ -566,7 +566,7 @@ async function makeImageItem(f,name,o={}){
   const url=URL.createObjectURL(f),img=new Image();await new Promise(ok=>{img.onload=ok;img.src=url});
   const wmm=o.width||Math.round(Math.min(120,Math.min(CFG.paper_w,CFG.area_w)*.6));
   const it=newItem('image',{name,uploadId:j.id,img,ar:img.height/img.width,src:{name,blob:f},...(o.extra||{}),
-    p:{mode:o.mode||'contour',threshold:j.otsu||128,invert:false,width:Math.round(wmm*10)/10,hatch:.5,angle:45,min_blob:.6,smooth:.6,show:true,levels:4}},o.quiet);
+    p:{mode:o.mode||(j.bw?'both':'contour'),cross:false,threshold:j.otsu||128,invert:false,width:Math.round(wmm*10)/10,hatch:.5,angle:45,min_blob:.6,smooth:.6,show:true,levels:4}},o.quiet);
   it.h=wmm*it.ar;it.w=wmm;it.otsu=j.otsu;return it}
 function pick(accept,multi=true){const i=$('#fileAny');i.accept=accept;i.multiple=multi;i.value='';i.onchange=()=>[...i.files].forEach(f=>act(()=>loadFile(f)));i.click()}
 $('#addText').onclick=addText;$('#addSvg').onclick=()=>pick('.svg,image/svg+xml');$('#addImg').onclick=()=>pick('image/*');$('#addDoc').onclick=()=>pick('.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document',false);
@@ -817,7 +817,9 @@ function renderInsp(){const it=sel(),box=$('#insp');
     <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
     <div class=row><label>Échelle %</label><input type=range data-k=scalepct data-t=num min=5 max=400 step=1 style="flex:1"><input type=number data-k=scalepct data-t=num style="width:64px"></div><div class=hint id=svgnotes></div>`;
   if(it.type==='image'){if(it.p.edge===undefined)it.p.edge=4;if(it.p.focus===undefined)it.p.focus=false;
-    h+=`${selc('mode','Mode',[['contour','Contours (bords)'],['edges','Lignes du dessin (détection)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']])}
+    h+=`${selc('mode','Mode',[['cf','Contours et remplissage'],['edges','Lignes du dessin (détection)'],['skeleton','Ligne centrale (traits)'],['tone','Tons de gris (hachures croisées)']])}
+    <div class=row data-cf><label></label><label class=hint style="width:auto"><input type=checkbox data-k=ctr data-t=chk> tracer les contours</label></div>
+    <div class=row data-cf><label></label><label class=hint style="width:auto"><input type=checkbox data-k=fil data-t=chk> remplir les noirs (hachures)</label></div>
     <div class=row data-thr><label>Seuil noir/blanc</label><input type=range data-k=threshold data-t=num min=1 max=254 step=1 style="flex:1"><input type=number data-k=threshold data-t=num style="width:64px"></div>
     <div class=row data-thr><label></label><button class=sec id=auto>Seuil auto</button><label class=hint style="width:auto"><input type=checkbox data-k=invert data-t=chk> inverser</label></div>
     <div class=row data-edge><label>Détails</label><input type=range data-k=edge data-t=num min=1 max=10 step=1 style="flex:1"><input type=number data-k=edge data-t=num style="width:64px"></div>
@@ -825,6 +827,7 @@ function renderInsp(){const it=sel(),box=$('#insp');
     ${num('width','Largeur',{min:5,max:400,step:1,u:'mm'})}
     <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
     <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
+    <div class=row data-hatch2><label></label><label class=hint style="width:auto"><input type=checkbox data-k=cross data-t=chk> hachures croisées (noir plus dense)</label></div>
     <div class=row data-tone><label>Niveaux de gris</label><input type=range data-k=levels data-t=num min=2 max=5 step=1 style="flex:1"><input type=number data-k=levels data-t=num style="width:64px"></div>
     ${num('min_blob','Ignorer taches <',{min:0,max:10,step:.1,u:'mm'})}${rng('smooth','Lissage',0,3,.1)}
     <div class=row><label></label><label class=hint style="width:auto"><input type=checkbox data-k=show data-t=chk> voir l'image sous les tracés</label></div>`}
@@ -846,21 +849,27 @@ function renderInsp(){const it=sel(),box=$('#insp');
     c.path2d=it.path2d;c.len=it.len;c.baseW=it.baseW;select(c);commit(true)};
   if(q('#reseed'))q('#reseed').onclick=()=>{it.p.seed=1+Math.floor(Math.random()*9999);vectorize(it);commit()};
   if(q('#auto'))q('#auto').onclick=()=>{it.p.threshold=it.otsu||128;syncInsp();vectorize(it)}}
-const REVEC=new Set(['text','font','size','line_spacing','letter_spacing','align','slant','jitter','max_width','trace','word_spacing','wobble','fill','levels','mode','threshold','invert','width','hatch','angle','min_blob','smooth']);
+const REVEC=new Set(['text','font','size','line_spacing','letter_spacing','align','slant','jitter','max_width','trace','word_spacing','wobble','fill','levels','mode','threshold','invert','width','hatch','angle','min_blob','smooth','edge','focus','cross','ctr','fil']);
 function onField(el){const it=sel();if(!it)return;const k=el.dataset.k;
   let v=el.dataset.t==='num'?parseFloat(el.value):el.dataset.t==='chk'?el.checked:el.value;
   if(el.dataset.t==='num'&&!isFinite(v))return;
+  if(k==='mode'&&v==='cf')v=it.p.cfm||'contour';
   if(k==='scalepct')it.scale=v/100;else if(el.dataset.top)it[k]=v;else it.p[k]=v;
+  if(k==='ctr'||k==='fil'){if(!it.p.ctr&&!it.p.fil){it.p[k]=true;el.checked=true}it.p.mode=it.p.ctr&&it.p.fil?'both':it.p.fil?'hatch':'contour'}
+  if(k==='mode'&&['contour','hatch','both'].includes(v))it.p.cfm=v;
   if(k==='mode'&&v==='tone'){it.p.threshold=190;it.p.hatch=Math.max(it.p.hatch||0,.7);it.p.smooth=Math.max(it.p.smooth||0,1)}
   if(k==='font')saveUI('font',v);if(k==='size')saveUI('size',v);
   syncInsp(el);if((REVEC.has(k)||it.type==='shape')&&!el.dataset.top)schedule(it,k==='text'?350:250);else{draw();if(k==='pen'){renderItems();renderInsp()}}updInfo();commit()}
 function syncInsp(except){const it=sel(),box=$('#insp');if(!it||box.style.display==='none')return;
+  if(it.type==='image'&&['contour','hatch','both'].includes(it.p.mode)){it.p.ctr=it.p.mode!=='hatch';it.p.fil=it.p.mode!=='contour';it.p.cfm=it.p.mode}
   box.querySelectorAll('[data-k]').forEach(el=>{if(el===except)return;const k=el.dataset.k;
     let v=k==='scalepct'?Math.round(it.scale*100):el.dataset.top?it[k]:it.p[k];if(v===undefined)return;
-    if(el.type==='checkbox')el.checked=!!v;else if(el.dataset.t==='num'&&typeof v==='number')el.value=+(+v).toFixed(2);else el.value=v});
+    if(el.type==='checkbox')el.checked=!!v;else if(el.dataset.t==='num'&&typeof v==='number')el.value=+(+v).toFixed(2);else el.value=(k==='mode'&&it.type==='image'&&['contour','hatch','both'].includes(v))?'cf':v});
   const sm=box.querySelector('#sysmode');if(sm)sm.style.display=(it.p.font||'').startsWith('sys:')?'':'none';
   box.querySelectorAll('[data-hatch]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both'||it.p.mode==='tone'||it.p.fill==='hatch')?'':'none');
   box.querySelectorAll('[data-tone]').forEach(r=>r.style.display=it.p.mode==='tone'?'':'none');
+  box.querySelectorAll('[data-hatch2]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both')?'':'none');
+  box.querySelectorAll('[data-cf]').forEach(r=>r.style.display=['contour','hatch','both'].includes(it.p.mode)?'':'none');
   box.querySelectorAll('[data-edge]').forEach(r=>r.style.display=it.p.mode==='edges'?'':'none');
   box.querySelectorAll('[data-thr]').forEach(r=>r.style.display=it.p.mode==='edges'?'none':'');
   updInfo()}
@@ -883,7 +892,7 @@ function groups(){return ITEMS.filter(i=>i.vis&&i.paths.length).map(i=>({paths:f
 function penInfo(){const used=[...new Set(ITEMS.filter(i=>i.vis&&i.paths.length).map(i=>i.pen||0))].sort((a,b)=>a-b);return{used,names:used.map(i=>(PENS()[i]||PENS()[0]).name)}}
 function curGroupsOrWarn(){const g=groups();if(!g.length){toast('Rien à tracer : ajoute et affiche un objet.',true);return null}if(ITEMS.some(i=>i.busy)){toast('Calcul en cours, réessaie dans un instant.',true);return null}return g}
 function clearTrail(){TRAIL=[];updTrailBtn();draw()}
-function updTrailBtn(){const b=$('#bclrtrail');if(b)b.disabled=!TRAIL.some(t=>t.pen&&t.p.length>1)}
+function updTrailBtn(){const b=$('#bclrtrail');if(b)b.disabled=TRAIL.length<2}
 $('#bclrtrail').onclick=clearTrail;
 $('#bnewsheet').onclick=async()=>{
   if(ST.job&&ST.job.running){toast('Un tracé est en cours : arrête-le d\'abord.');return}
@@ -956,7 +965,7 @@ $('#bresume').onclick=async()=>{const r=ST.resume;if(!r)return;
   if(ok)await act(()=>api('/job/resume',{path:+$('#rn').value||r.path}))};
 
 /* ───── état ───── */
-let lastW='',TRAIL=[],lastReach='';
+let lastW='',TRAIL=[],trailId=-1,trailN=0,lastReach='';
 function applyState(s){const was=ST;ST=s;const j=s.job||{};
   const dot=$('#dot');dot.className='dot'+(s.connected?(/Alarm/.test(s.state)?' err':(j.running||/Run|Hold/.test(s.state))?' run':' ok'):'');
   $('#stxt').textContent=s.connected?`${s.sim?'Simulation':'Connecté'} · ${s.state}`:'Déconnecté';
@@ -989,15 +998,14 @@ function applyState(s){const was=ST;ST=s;const j=s.job||{};
   // activation des contrôles
   const can=s.connected&&!run;$$('#s-control button').forEach(b=>{if(b.id!=='bsettings')b.disabled=!can});$('#bsend').disabled=!(s.connected&&!run);$('#bsettings').disabled=!can;
   $('#brun').disabled=false;['dstart','calDraw','calCalc','prDraw'].forEach(id=>{const b=$('#'+id);if(b)b.disabled=!(s.connected&&!run)});
-  if(run&&!(was.job&&was.job.running)&&!j.resumed&&!/^(Alignement|Cadre|Essai)/.test(j.name||''))TRAIL=[];
-  if(run&&s.spindle>0){const l=TRAIL[TRAIL.length-1];if(!l||l.pen!==1){TRAIL.push({pen:1,p:[]})}TRAIL[TRAIL.length-1].p.push(s.wpos)}else if(TRAIL.length&&TRAIL[TRAIL.length-1].pen===1)TRAIL.push({pen:0,p:[]});updTrailBtn();
+  const tr=s.trail;if(tr){if(tr.id!==trailId){TRAIL=[];trailId=tr.id}for(const p of tr.pts)TRAIL.push(p);trailN=tr.n;updTrailBtn();if(tr.pts.length&&curTab()==='compose')draw()}
   const wk=s.wpos.join();if(wk!==lastW||(was.spindle>0)!==(s.spindle>0)){lastW=wk;if(curTab()==='compose')draw();if(curTab()==='gcode')gdraw()}
   // journal
   if(s.log.length){const L=$('#log'),bot=L.scrollTop+L.clientHeight>=L.scrollHeight-20;
     s.log.forEach(e=>{if(e.t<=lastLog)return;lastLog=Math.max(lastLog,e.t);const d=document.createElement('div');d.className=e.k;d.textContent=({tx:'› ',rx:'‹ ',err:'✖ ',warn:'⚠ ',info:'• '}[e.k]||'')+e.s;L.append(d)});
     while(L.childElementCount>400)L.firstChild.remove();if(bot)L.scrollTop=L.scrollHeight}}
 let polling=false;
-setInterval(async()=>{if(polling)return;polling=true;try{applyState(await api('/state?after='+lastLog))}catch(e){}polling=false},250);
+setInterval(async()=>{if(polling)return;polling=true;try{applyState(await api('/state?after='+lastLog+'&tid='+trailId+'&ta='+trailN))}catch(e){}polling=false},250);
 setInterval(()=>{if(!ST.connected&&document.hasFocus())loadPorts()},4000);
 
 /* ───── contrôle manuel ───── */
@@ -1308,7 +1316,7 @@ $('#mall').onclick=()=>act(async()=>{const N=MERGE.rows.length,start=MERGE.idx;
 /* ───── documents Word / PDF ───── */
 const DOC={on:false,tok:null,id:null,info:null,name:'',opts:null,idx:0,n:1,sig:'',blobs:new Map(),els:new Map()};
 const DOCDEF={font:'scripts',size:4,line_spacing:1.7,reflow:true,images:true,img_w:80,img_mode:'contour'};
-const IMG_MODES=[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Hachures (remplissage)'],['both','Contours + hachures'],['tone','Tons de gris (hachures croisées)']];
+const IMG_MODES=[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Remplissage seul (hachures)'],['both','Contours + remplissage des noirs'],['tone','Tons de gris (hachures croisées)']];
 const docSig=()=>JSON.stringify(ITEMS.filter(i=>i.doc===DOC.tok).map(i=>[i.id,+i.cx.toFixed(2),+i.cy.toFixed(2),i.rot,i.scale,i.vis,i.pen||0,i.p]));
 const docReq=(id,o,page)=>({id,font:o.font,size:o.size,line_spacing:o.line_spacing,letter_spacing:0,gap:.6,reflow:o.reflow,breaks:o.breaks,tables:o.tables!==false,hf:o.hf!==false,images:o.images,img_w:o.img_w,rotate:o.rotate||0,margin:o.margin,paper_w:paperDims()[0],paper_h:paperDims()[1],page});
 const docBlob=async i=>{if(!DOC.blobs.has(i))DOC.blobs.set(i,await fetch(`/api/doc/img?id=${DOC.id}&i=${i}`).then(r=>r.blob()));return DOC.blobs.get(i)};

@@ -619,7 +619,7 @@ def otsu(gray):
 
 
 def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blob=0.5,
-                  smooth=0.6, simplify=0.05, spur=1.0, levels=4, edge=4, focus=False, cross=False):
+                  smooth=0.6, simplify=0.05, spur=1.0, levels=4, edge=4, focus=False, cross=False, tonal=False, thin=1.2):
     """gray : PIL L (0 noir … 255 blanc) à ppm pixels/mm. Retourne des polylignes en mm
     (origine = coin haut-gauche de l'image)."""
     from skimage import measure
@@ -627,17 +627,33 @@ def mask_to_paths(gray, ppm, mode, threshold=128, hatch=0.5, angle=45.0, min_blo
     if smooth > 0:
         gray = gray.filter(ImageFilter.GaussianBlur(smooth))
     a = np.asarray(gray, dtype=np.float32)
+    fill = mode in ("hatch", "both")
+    tn = None                                            # traits pleins fins : tracés en ligne, pas hachurés
+    ctr_level = float(threshold)
+    lvl = None
+    if fill and tonal:
+        lvl, lo = _tonal_levels(a, threshold, levels)
+        L = int(max(2, min(len(TONAL_MULT), levels)))
+        ctr_level = lo + (max(30.0, float(threshold)) - lo) / L     # nuances de gris : le contour ne suit que les noirs
+    if fill and thin > 0:
+        tn = _split_thin((lvl == 0) if tonal else (a < threshold), ppm, thin)[1]
+        out += _skeleton(tn, ppm, spur, max(min_blob, thin * 1.2))
     if mode in ("contour", "both"):
-        pad = np.pad(a, 1, constant_values=255)
-        for c in measure.find_contours(pad, level=float(threshold)):
+        ac = a if tn is None else np.where(tn, 255.0, a)  # pas de double contour autour des traits fins
+        pad = np.pad(ac, 1, constant_values=255)
+        for c in measure.find_contours(pad, level=ctr_level):
             pts = [((x - 1) / ppm, (y - 1) / ppm) for y, x in c]
             if len(pts) < 4 or path_len(pts) < min_blob * 2:
                 continue
             out.append(pts)
-    if mode in ("hatch", "both"):
-        out += _hatch(a < threshold, ppm, hatch, angle, min_blob)
+    if fill and tonal:                                   # hachures plus ou moins espacées selon le gris
+        out += _hatch_tonal(a, ppm, hatch, angle, min_blob, threshold, levels, cross, tn)
+    elif fill:
+        m = a < threshold
+        if tn is not None: m = m & ~tn
+        out += _hatch(m, ppm, hatch, angle, min_blob)
         if cross:                                        # 2e passe à 90° : noir plus dense, plus uniforme
-            out += _hatch(a < threshold, ppm, hatch, (angle + 90.0) % 180.0, min_blob)
+            out += _hatch(m, ppm, hatch, (angle + 90.0) % 180.0, min_blob)
     if mode == "skeleton":
         out += _skeleton(a < threshold, ppm, spur, min_blob)
     if mode == "edges":
@@ -709,6 +725,79 @@ def _hatch(mask, ppm, spacing, angle, min_len):
             segs.append(seg)
         y += step; row_i += 1
     return segs
+
+
+TONAL_MULT = (1, 2, 3, 4, 6, 8)         # une ligne sur n selon le gris : 1 = noir plein, 8 = gris très clair
+
+
+def _split_thin(mask, ppm, thin_mm):
+    """Sépare un masque en (parties larges, traits fins) : fin = plus étroit que thin_mm (trait plein)."""
+    from scipy import ndimage as ndi
+    r = max(1.0, thin_mm * ppm / 2.0)
+    dt = ndi.distance_transform_edt(np.pad(mask, 1))[1:-1, 1:-1]
+    core = dt > r
+    if not core.any():
+        return np.zeros_like(mask), mask.copy()
+    wide = mask & (ndi.distance_transform_edt(~core) <= r + 1.0)
+    return wide, mask & ~wide
+
+
+def _tonal_levels(a, white, levels):
+    """Palier de gris de chaque pixel (0 = le plus sombre … L-1), 255 = blanc (rien à tracer) ; et le gris le plus sombre."""
+    L = int(max(2, min(len(TONAL_MULT), levels)))
+    white = max(30.0, float(white))
+    lo = min(float(np.percentile(a, 1)), white - 25.0)  # étire les tons : le plus sombre de l'image = palier noir
+    t = (a - lo) / max(1.0, white - lo)
+    return np.where(t >= 1.0, 255, np.clip(np.floor(t * L), 0, L - 1)).astype(np.uint8), lo
+
+
+def _hatch_tonal(a, ppm, spacing, angle, min_len, white, levels, cross, thin_mask=None):
+    """Hachures dont l'espacement dépend du gris : les lignes sont tracées à `spacing` mm dans les zones
+    les plus sombres, puis une ligne sur 2, 3, 4… dans les zones de plus en plus claires.
+    white = gris à partir duquel on ne trace plus rien. levels = nombre de paliers (2 à 6).
+    cross : 2e passe à 90° dans les zones les plus sombres seulement (noirs plus profonds)."""
+    L = int(max(2, min(len(TONAL_MULT), levels)))
+    lvl, _lo = _tonal_levels(a, white, levels)
+    if thin_mask is not None:
+        lvl[thin_mask] = 255                            # traits fins : déjà tracés en ligne
+    mult = np.zeros(256, dtype=np.int64)
+    mult[:L] = TONAL_MULT[:L]
+
+    def run(lv, ang, only_dark):
+        H, W = lv.shape
+        m = Image.fromarray(lv)
+        ang = float(ang) % 180
+        if ang:
+            m = m.rotate(ang, resample=Image.NEAREST, expand=True, fillcolor=255)
+        r = np.asarray(m)
+        RH, RW = r.shape
+        step = max(1.0, spacing * ppm)
+        ca, sa = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+        ncx, ncy = RW / 2.0, RH / 2.0; cx, cy = W / 2.0, H / 2.0
+        segs = []; y = step / 2; j = 0; flip = False
+        while y < RH:
+            mp = mult[r[int(y)]]
+            if only_dark: mp = np.where(mp == 1, 1, 0)
+            on = (mp > 0) & (j % np.maximum(mp, 1) == 0)
+            d = np.diff(np.concatenate(([0], on.astype(np.int8), [0])))
+            starts = np.nonzero(d == 1)[0]; ends = np.nonzero(d == -1)[0]
+            runs = [(s0, e0) for s0, e0 in zip(starts, ends) if (e0 - s0) / ppm >= min_len]
+            if runs:
+                if flip: runs = [(e0, s0) for s0, e0 in runs[::-1]]
+                flip = not flip
+            for s0, e0 in runs:
+                seg = []
+                for xx in (s0, e0):
+                    dx, dy = xx - ncx, y - ncy
+                    seg.append(((dx * ca - dy * sa + cx) / ppm, (dx * sa + dy * ca + cy) / ppm))
+                segs.append(seg)
+            y += step; j += 1
+        return segs
+
+    out = run(lvl, angle, False)
+    if cross:
+        out += run(lvl, (angle + 90.0) % 180.0, True)
+    return out
 
 
 def _skeleton(mask, ppm, spur_mm, min_len):
@@ -783,7 +872,7 @@ def _skeleton(mask, ppm, spur_mm, min_len):
 
 
 def image_to_paths(gray, width_mm, mode="contour", threshold=128, invert=False, hatch=0.5, angle=45.0,
-                   min_blob=0.5, simplify=0.05, smooth=0.6, max_px=2600, levels=4, edge=4, focus=False, cross=False):
+                   min_blob=0.5, simplify=0.05, smooth=0.6, max_px=2600, levels=4, edge=4, focus=False, cross=False, tonal=False, thin=1.2):
     """gray : image PIL 'L'. Retourne (paths centrés, w, h, info)."""
     if invert:
         gray = ImageOps.invert(gray)
@@ -796,7 +885,7 @@ def image_to_paths(gray, width_mm, mode="contour", threshold=128, invert=False, 
     w_px = max(8, int(round(width_mm * ppm))); h_px = max(8, int(round(width_mm * ar * ppm)))
     g = gray.resize((w_px, h_px), Image.LANCZOS)
     paths = mask_to_paths(g, w_px / width_mm, mode, threshold, hatch, angle, min_blob, smooth, simplify,
-                          levels=levels, edge=edge, focus=focus, cross=cross)
+                          levels=levels, edge=edge, focus=focus, cross=cross, tonal=tonal, thin=thin)
     paths = clean(paths, simplify, 0.05)
     if not paths:
         return [], 0.0, 0.0, {"ppm": round(ppm, 2)}

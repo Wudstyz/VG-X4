@@ -569,7 +569,7 @@ def route(method, path, q, body, headers):
         o = {"font": str(P("font", "scripts")), "size": max(1.0, float(P("size", 4))),
              "line_spacing": max(1.0, float(P("line_spacing", 1.7))), "letter_spacing": float(P("letter_spacing", 0)),
              "gap": max(0.0, float(P("gap", 0.6))), "reflow": bool(P("reflow", True)), "breaks": bool(P("breaks", True)),
-             "tables": bool(P("tables", True)), "hf": bool(P("hf", True)), "images": bool(P("images", True)), "img_w": max(10.0, float(P("img_w", 80))), "margin": margin,
+             "tables": bool(P("tables", True)), "hf": bool(P("hf", True)), "images": bool(P("images", True)), "img_w": max(10.0, float(P("img_w", 80))), "img_doc": bool(P("img_doc", True)), "margin": margin,
              "rotate": int(P("rotate", 0)) % 360 // 90 * 90}
         pw, ph = float(P("paper_w", 297)), float(P("paper_h", 210))
         vw, vh = (ph, pw) if o["rotate"] in (90, 270) else (pw, ph)     # papier « virtuel » sur lequel on met en page
@@ -599,7 +599,7 @@ def route(method, path, q, body, headers):
             u["gray"], max(2.0, float(P("width", 100))), P("mode", "contour"), int(P("threshold", 128)),
             bool(P("invert", False)), float(P("hatch", 0.5)), float(P("angle", 45)), float(P("min_blob", 0.5)),
             float(cfg().get("simplify", 0.05)), float(P("smooth", 0.6)), levels=int(P("levels", 4)),
-            edge=float(P("edge", 4)), focus=bool(P("focus", False)), cross=bool(P("cross", False)))
+            edge=float(P("edge", 4)), focus=bool(P("focus", False)), cross=bool(P("cross", False)), tonal=bool(P("tonal", False)), thin=max(0.0, float(P("thin", 1.2))))
         return vec_response(paths, w, h, {"info": info})
     if path == "/api/gcode/build":
         groups, pens = parse_groups(P("groups", []))

@@ -47,7 +47,7 @@ def parse_job(lines):
     absm = True; x = y = 0.0; motion = None
     pts, mot = [], []
     for l in lines:
-        u = l.upper()
+        u = re.sub(r"\(.*?\)", "", l.split(";")[0]).upper()
         gs = [int(float(v)) for v in re.findall(r"G\s*(\d+\.?\d*)", u)]
         vals = {k: float(v) for k, v in re.findall(r"([XY])\s*([-+]?(?:\d+\.?\d*|\.\d+))", u)}
         if 90 in gs: absm = True
@@ -290,7 +290,8 @@ class Machine:
         self.cont_event = threading.Event()
         self.grbl_cfg = {}
         self.job_full = None; self.job_parsed = None; self.job_off = None; self.job_base_name = ""
-        self.trail = []; self.trail_id = 0; self._tf = None   # tracé réellement dessiné (suivi du programme)
+        self.mem = None                                 # dernière position connue (zéro + stylo), gardée tant que l'app est ouverte
+        self.trail = []; self.trail_li = []; self.trail_id = 0; self._tf = None   # tracé réellement dessiné (suivi du programme)
         self.stop_pos = None; self.stop_waiting = False; self._ri_key = None; self._ri = None
         self.awake_proc = None; self.journal_path = None
         self.limit_m = {"x": None, "y": None}          # positions machine (brutes) des butées enregistrées
@@ -341,6 +342,38 @@ class Machine:
             self._log("warn", f"Pas de réponse à $I : {e}")
         if not self.sim and "VigoWriter" not in self.firmware and "1.1" not in self.firmware:
             self._log("warn", "Firmware non reconnu (attendu : VigoWriter 1.1f). Vérifie le port.")
+        if not self.sim and self.mem:
+            try: self._restore_zero()
+            except Exception as e: self._log("warn", f"Point zéro non restauré : {e}")
+
+    def _restore_zero(self):
+        """Après une reconnexion : la carte a redémarré (position 0,0, zéro perdu) mais le stylo n'a pas bougé.
+        On redonne à la carte la dernière position connue, donc le point zéro reste celui du dessin."""
+        mem = self.mem; lw, lm = mem["w"], mem["m"]
+        t_end = time.monotonic() + 3.0
+        while time.monotonic() < t_end and self.state in ("Connexion…", "—"):
+            time.sleep(0.05)
+        time.sleep(0.4)                                   # laisse arriver un statut à jour
+        if self.state.startswith("Alarm"):
+            self._log("warn", "Carte en alarme : point zéro précédent non restauré (débloque puis redéfinis le zéro).")
+            self.mem = None
+            return
+        if math.hypot(self.mpos[0], self.mpos[1]) < 0.5:  # carte redémarrée : on lui redonne la position
+            self.command("M5", timeout=4, quiet=True)
+            self.command(f"G92 X{lw[0]:.3f} Y{lw[1]:.3f}", timeout=4, quiet=True)
+            self.zero_set = True; self.has_wco = True
+            self._log("info", f"Point zéro précédent conservé (dernière position connue : X{lw[0]:.2f} Y{lw[1]:.2f}). "
+                              "Vérifie que le stylo n'a pas été déplacé à la main.")
+        elif math.hypot(self.mpos[0] - lm[0], self.mpos[1] - lm[1]) < 1.0:      # la carte n'avait pas redémarré
+            t2 = time.monotonic() + 2.0
+            while not self.has_wco and time.monotonic() < t2:
+                time.sleep(0.05)
+            if self.has_wco:
+                self.zero_set = True
+                self._log("info", "Point zéro précédent conservé (la carte n'avait pas redémarré).")
+        else:
+            self._log("warn", "Position de la carte inattendue : point zéro précédent non restauré, redéfinis-le.")
+            self.mem = None
 
     def disconnect(self, keep_auto=False):
         port = self.port
@@ -374,6 +407,7 @@ class Machine:
                 if self.connected:
                     self._log("err", f"Liaison perdue : {e}")
                     self.state = "Déconnecté"; self.connected = False; self.lost = bool(self.auto_port)
+                    if self.mem and self.job.get("running"): self.stop_pos = list(self.mem["w"])
                     self.job.update(running=False, state="error", msg="Liaison série perdue")
                     self.stop_flag.set()
                 return
@@ -403,6 +437,8 @@ class Machine:
                         f, s = v.split(",")[:2]; self.feed = int(float(f)); self.spindle = int(float(s))
                 except ValueError:
                     pass
+            if self.zero_set and self.has_wco and not self.sim and self.connected:
+                self.mem = {"w": self.wpos(), "m": list(self.mpos)}
             if self._tf is not None:
                 try: self._trail_feed()
                 except Exception: pass
@@ -586,6 +622,7 @@ class Machine:
                 except Exception as e:
                     self._log("warn", f"Zéro non restauré : {e}")
         self.zero_set = restored
+        if not restored: self.mem = None
         self._ri_key = None
         if restored:
             self._log("info", "Arrêt propre : position et point zéro conservés — tu peux reprendre le tracé.")
@@ -767,56 +804,87 @@ class Machine:
 
     # ── tracé affiché : on suit le programme, pas seulement les relevés de position ──
     def _trail_init(self, lines, resumed, name):
-        """Prépare le suivi : liste des déplacements (x0, y0, x1, y1, stylo, longueur) du programme."""
+        """Prépare le suivi : liste des déplacements (x0, y0, x1, y1, stylo, longueur) du programme,
+        avec la ligne d'où chacun vient (la machine ne peut pas être au-delà de ce qui a été envoyé)."""
         if not resumed and not re.match(r"(Alignement|Cadre|Essai)", name or ""):
-            self.trail = []; self.trail_id += 1
+            self.trail = []; self.trail_li = []; self.trail_id += 1
+        elif resumed and self.job_off:                   # reprise : on garde ce qui précède le point de reprise, rien de plus
+            st = self.job_off[1]
+            keep = [n for n, i in enumerate(self.trail_li) if i < st]
+            if len(keep) != len(self.trail):
+                self.trail = [self.trail[n] for n in keep]; self.trail_li = [self.trail_li[n] for n in keep]
+                self.trail_id += 1
         pts, mot, _ = parse_job(lines)
-        px, py = self.wpos(); pen = False; mv = []
+        px, py = self.wpos(); pen = False; mv = []; li = []
         for i, l in enumerate(lines):
-            u = l.upper()
+            u = re.sub(r"\(.*?\)", "", l.split(";")[0]).upper()
             if re.search(r"\bM0?[34]\b", u): pen = True
             elif re.search(r"\bM0?5\b", u): pen = False
             if mot[i]:
                 x, y = pts[i]
                 mv.append((px, py, x, y, pen, math.hypot(x - px, y - py)))
+                li.append(i)
                 px, py = x, y
-        self._tf = {"mv": mv, "k": 0, "t": 0.0, "miss": 0}
+        self._tf = {"mv": mv, "li": li, "k": 0, "t": 0.0, "miss": 0, "n": len(lines)}
+
+    def _tpush(self, pen, x, y, line_i):
+        f = self._full_idx(line_i)
+        self.trail.append([1 if pen else 0, round(x, 2), round(y, 2)])
+        self.trail_li.append(-1 if f is None else f)
+
+    TRAIL_BEHIND = 80          # lignes : retard maximal de la machine sur ce qui a été envoyé (tampon de la carte)
 
     def _trail_feed(self, final=False):
-        """Place la position de la machine sur le programme et ajoute au tracé les morceaux parcourus."""
+        """Place la position de la machine sur le programme et ajoute au tracé les morceaux parcourus.
+        La recherche reste dans la fenêtre « lignes envoyées moins le tampon de la carte » : le suivi ne peut
+        donc ni sauter en avant (vers un trait voisin plus loin dans le fichier) ni rester loin derrière."""
         tf = self._tf
         if not tf:
             return
-        mv = tf["mv"]; k, t = tf["k"], tf["t"]
+        mv = tf["mv"]; li = tf["li"]; k, t = tf["k"], tf["t"]
         if k >= len(mv):
             return
+        sent = self.job.get("sent", 0)
+        done = self.job.get("state") == "done"
+        hi = len(mv) if (done or sent >= tf["n"]) else bisect.bisect_left(li, sent)       # déplacements déjà envoyés
+        lo = 0 if (final and done) else bisect.bisect_left(li, sent - self.TRAIL_BEHIND)
+        if final and done:                               # tracé terminé : tout le reste a été dessiné
+            for j in range(k, len(mv)):
+                x0, y0, x1, y1, pen, L = mv[j]
+                self._tpush(pen, x1, y1, li[j])
+            tf["k"] = len(mv); tf["t"] = 0.0
+            return
+        if lo > k:                                       # la machine ne peut plus être avant : on avance le curseur
+            k, t = lo, 0.0
+        if k >= hi:
+            return
         wx, wy = self.wpos()
-        far = tf["miss"] >= 8 or final
         best = None; acc = 0.0; i = k
-        while i < len(mv) and (far or acc < 60.0):
+        limit = None if (tf["miss"] >= 8 or final) else 60.0
+        while i < hi and (limit is None or acc < limit):
             x0, y0, x1, y1, pen, L = mv[i]
             tt = 1.0 if L < 1e-9 else ((wx - x0) * (x1 - x0) + (wy - y0) * (y1 - y0)) / (L * L)
             tt = min(1.0, max(0.0, tt))
-            if i == k: tt = max(tt, t)
+            if i == tf["k"]: tt = max(tt, tf["t"])
             d = math.hypot(wx - (x0 + (x1 - x0) * tt), wy - (y0 + (y1 - y0) * tt))
             if best is None or d < best[0] - 1e-6:
                 best = (d, i, tt)
-                if d < 1e-4 and not far: break
-            acc += L * (1.0 - (t if i == k else 0.0)); i += 1
+                if d < 1e-4 and limit is not None: break
+            acc += L; i += 1
         if best is None or best[0] > 0.5:
             tf["miss"] += 1
             return
         tf["miss"] = 0
         _, bi, bt = best
-        out = self.trail
+        k0, t0 = tf["k"], tf["t"]
         def pt(j, f):
             x0, y0, x1, y1, pen, L = mv[j]
-            out.append([1 if pen else 0, round(x0 + (x1 - x0) * f, 2), round(y0 + (y1 - y0) * f, 2)])
-        if bi == k:
-            if bt > t: pt(k, bt)
+            self._tpush(pen, x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, li[j])
+        if bi == k0:
+            if bt > t0: pt(k0, bt)
         else:
-            pt(k, 1.0)
-            for j in range(k + 1, bi): pt(j, 1.0)
+            pt(k0, 1.0)
+            for j in range(k0 + 1, bi): pt(j, 1.0)
             if bt > 0: pt(bi, bt)
         tf["k"], tf["t"] = bi, bt
 

@@ -57,8 +57,9 @@ class Extract:
         if self.blocks and self.blocks[-1]["t"] != "pb":
             self.blocks.append({"t": "pb"})
 
-    def image(self, blob):
-        """Ajoute une image (octets d'un fichier image). Retourne True si elle est exploitable."""
+    def image(self, blob, mm=None):
+        """Ajoute une image (octets d'un fichier image). `mm` = largeur réelle de l'image dans le
+        document d'origine (millimètres). Retourne True si elle est exploitable."""
         if len(self.images) >= MAX_IMAGES:
             self.skipped += 1
             return False
@@ -89,7 +90,7 @@ class Extract:
         i = self.by_hash[h]
         if i is None:
             return False
-        self.blocks.append({"t": "img", "i": i})
+        self.blocks.append({"t": "img", "i": i, "mm": mm})
         return True
 
 
@@ -220,21 +221,25 @@ def extract_docx(data):
             bullet = numpr is not None or style.startswith(("list", "liste"))
             br_page = False
             rids = []
+            ext = None
             for el in child.iter():
                 t = el.tag.rsplit("}", 1)[-1]
-                if t == "blip":
-                    rids.append(el.get(f"{{{R_NS}}}embed"))
+                if t == "extent":                                  # taille de l'image dans Word (EMU)
+                    try: ext = int(el.get("cx"))
+                    except (TypeError, ValueError): ext = None
+                elif t == "blip":
+                    rids.append((el.get(f"{{{R_NS}}}embed"), ext)); ext = None
                 elif t == "imagedata":
-                    rids.append(el.get(f"{{{R_NS}}}id"))
+                    rids.append((el.get(f"{{{R_NS}}}id"), None))
                 elif t == "br" and el.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type") == "page":
                     br_page = True
             if child.find(".//{*}pageBreakBefore") is not None:
                 ex.page_break()
             ex.text(para.text, "h" if level else "p", level, bullet=bullet and not level)
-            for rid in rids:
+            for rid, cx in rids:
                 part = rel.get(rid) if rid else None
                 if part is not None:
-                    ex.image(part.blob)
+                    ex.image(part.blob, cx / 36000.0 if cx and cx > 0 else None)      # EMU → mm
             if br_page:
                 ex.page_break()
         elif tag == "tbl":
@@ -395,7 +400,12 @@ def extract_pdf(data):
             imgs = []
         for im in imgs:
             try:
-                ex.image(im.data)
+                mm = None
+                try:
+                    mm = (float(im["x1"]) - float(im["x0"])) * 25.4 / 72.0                # points → mm
+                except Exception:
+                    pass
+                ex.image(im.data, mm if mm and mm > 1 else None)
             except Exception:
                 ex.skipped += 1
     if pl:
@@ -566,7 +576,8 @@ def paginate(ex, o):
             if not o["images"]:
                 continue
             iw, ih = ex.images[b["i"]]["w"], ex.images[b["i"]]["h"]
-            w = min(W, o["img_w"])
+            real = b.get("mm")
+            w = min(W, real) if (o.get("img_doc") and real) else min(W, o["img_w"])
             h = w * ih / iw
             if h > H:
                 w, h = w * H / h, H

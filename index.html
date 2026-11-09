@@ -566,7 +566,7 @@ async function makeImageItem(f,name,o={}){
   const url=URL.createObjectURL(f),img=new Image();await new Promise(ok=>{img.onload=ok;img.src=url});
   const wmm=o.width||Math.round(Math.min(120,Math.min(CFG.paper_w,CFG.area_w)*.6));
   const it=newItem('image',{name,uploadId:j.id,img,ar:img.height/img.width,src:{name,blob:f},...(o.extra||{}),
-    p:{mode:o.mode||(j.bw?'both':'contour'),cross:false,threshold:j.otsu||128,invert:false,width:Math.round(wmm*10)/10,hatch:.5,angle:45,min_blob:.6,smooth:.6,show:true,levels:4}},o.quiet);
+    p:{mode:o.mode||(j.bw?'both':'contour'),cross:false,threshold:j.otsu||128,invert:false,width:Math.round(wmm*10)/10,hatch:.5,angle:45,thin:1.2,min_blob:.6,smooth:.6,show:true,levels:4,...(o.tonal?{tonal:true,threshold:225,levels:5,smooth:.8}:{})}},o.quiet);
   it.h=wmm*it.ar;it.w=wmm;it.otsu=j.otsu;return it}
 function pick(accept,multi=true){const i=$('#fileAny');i.accept=accept;i.multiple=multi;i.value='';i.onchange=()=>[...i.files].forEach(f=>act(()=>loadFile(f)));i.click()}
 $('#addText').onclick=addText;$('#addSvg').onclick=()=>pick('.svg,image/svg+xml');$('#addImg').onclick=()=>pick('image/*');$('#addDoc').onclick=()=>pick('.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document',false);
@@ -816,19 +816,21 @@ function renderInsp(){const it=sel(),box=$('#insp');
     <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
     <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
     <div class=row><label>Échelle %</label><input type=range data-k=scalepct data-t=num min=5 max=400 step=1 style="flex:1"><input type=number data-k=scalepct data-t=num style="width:64px"></div><div class=hint id=svgnotes></div>`;
-  if(it.type==='image'){if(it.p.edge===undefined)it.p.edge=4;if(it.p.focus===undefined)it.p.focus=false;
+  if(it.type==='image'){if(it.p.thin===undefined)it.p.thin=1.2;if(it.p.edge===undefined)it.p.edge=4;if(it.p.focus===undefined)it.p.focus=false;
     h+=`${selc('mode','Mode',[['cf','Contours et remplissage'],['edges','Lignes du dessin (détection)'],['skeleton','Ligne centrale (traits)'],['tone','Tons de gris (hachures croisées)']])}
     <div class=row data-cf><label></label><label class=hint style="width:auto"><input type=checkbox data-k=ctr data-t=chk> tracer les contours</label></div>
     <div class=row data-cf><label></label><label class=hint style="width:auto"><input type=checkbox data-k=fil data-t=chk> remplir les noirs (hachures)</label></div>
+    <div class=row data-ton><label></label><label class=hint style="width:auto" title="Les zones sombres sont hachurées serré, les zones claires plus espacé : un seul stylo noir rend les nuances de gris."><input type=checkbox data-k=tonal data-t=chk> nuances de gris (espacement variable)</label></div>
     <div class=row data-thr><label>Seuil noir/blanc</label><input type=range data-k=threshold data-t=num min=1 max=254 step=1 style="flex:1"><input type=number data-k=threshold data-t=num style="width:64px"></div>
     <div class=row data-thr><label></label><button class=sec id=auto>Seuil auto</button><label class=hint style="width:auto"><input type=checkbox data-k=invert data-t=chk> inverser</label></div>
     <div class=row data-edge><label>Détails</label><input type=range data-k=edge data-t=num min=1 max=10 step=1 style="flex:1"><input type=number data-k=edge data-t=num style="width:64px"></div>
     <div class=row data-edge><label></label><label class=hint style="width:auto"><input type=checkbox data-k=focus data-t=chk> ignorer le fond flou et le cadre</label></div>
     ${num('width','Largeur',{min:5,max:400,step:1,u:'mm'})}
     <div class=row data-hatch><label>Pas hachures</label><input type=number data-k=hatch data-t=num min=.2 max=5 step=.1><span class=hint>mm</span></div>
+    <div class=row data-hatch title="Un trait plein plus fin que cette largeur est tracé en une seule ligne au lieu d'être hachuré. 0 = tout hachurer."><label>Traits fins en ligne</label><input type=number data-k=thin data-t=num min=0 max=5 step=.1><span class=hint>mm (0 = hachurer)</span></div>
     <div class=row data-hatch><label>Angle</label><input type=number data-k=angle data-t=num min=0 max=179 step=5><span class=hint>°</span></div>
     <div class=row data-hatch2><label></label><label class=hint style="width:auto"><input type=checkbox data-k=cross data-t=chk> hachures croisées (noir plus dense)</label></div>
-    <div class=row data-tone><label>Niveaux de gris</label><input type=range data-k=levels data-t=num min=2 max=5 step=1 style="flex:1"><input type=number data-k=levels data-t=num style="width:64px"></div>
+    <div class=row data-tone><label>Niveaux de gris</label><input type=range data-k=levels data-t=num min=2 max=6 step=1 style="flex:1"><input type=number data-k=levels data-t=num style="width:64px"></div>
     ${num('min_blob','Ignorer taches <',{min:0,max:10,step:.1,u:'mm'})}${rng('smooth','Lissage',0,3,.1)}
     <div class=row><label></label><label class=hint style="width:auto"><input type=checkbox data-k=show data-t=chk> voir l'image sous les tracés</label></div>`}
   if(it.type==='shape'){const sc=LIB.gens[it.p.gen];h+=sc?sc.params.map(q=>num(q.k,q.label,{min:q.min,max:q.max,step:q.step,u:q.unit})).join(''):`<div class=hint>Dessin de la bibliothèque : taille et rotation libres.</div>`}
@@ -849,7 +851,7 @@ function renderInsp(){const it=sel(),box=$('#insp');
     c.path2d=it.path2d;c.len=it.len;c.baseW=it.baseW;select(c);commit(true)};
   if(q('#reseed'))q('#reseed').onclick=()=>{it.p.seed=1+Math.floor(Math.random()*9999);vectorize(it);commit()};
   if(q('#auto'))q('#auto').onclick=()=>{it.p.threshold=it.otsu||128;syncInsp();vectorize(it)}}
-const REVEC=new Set(['text','font','size','line_spacing','letter_spacing','align','slant','jitter','max_width','trace','word_spacing','wobble','fill','levels','mode','threshold','invert','width','hatch','angle','min_blob','smooth','edge','focus','cross','ctr','fil']);
+const REVEC=new Set(['text','font','size','line_spacing','letter_spacing','align','slant','jitter','max_width','trace','word_spacing','wobble','fill','levels','mode','threshold','invert','width','hatch','angle','min_blob','smooth','edge','focus','cross','ctr','fil','tonal','thin']);
 function onField(el){const it=sel();if(!it)return;const k=el.dataset.k;
   let v=el.dataset.t==='num'?parseFloat(el.value):el.dataset.t==='chk'?el.checked:el.value;
   if(el.dataset.t==='num'&&!isFinite(v))return;
@@ -857,6 +859,7 @@ function onField(el){const it=sel();if(!it)return;const k=el.dataset.k;
   if(k==='scalepct')it.scale=v/100;else if(el.dataset.top)it[k]=v;else it.p[k]=v;
   if(k==='ctr'||k==='fil'){if(!it.p.ctr&&!it.p.fil){it.p[k]=true;el.checked=true}it.p.mode=it.p.ctr&&it.p.fil?'both':it.p.fil?'hatch':'contour'}
   if(k==='mode'&&['contour','hatch','both'].includes(v))it.p.cfm=v;
+  if(k==='tonal'&&v){it.p.threshold=Math.max(it.p.threshold||0,225);it.p.levels=Math.max(it.p.levels||0,5);it.p.smooth=Math.max(it.p.smooth||0,.8);it.p.fil=true;it.p.ctr=false;it.p.mode='hatch';it.p.cfm='hatch'}
   if(k==='mode'&&v==='tone'){it.p.threshold=190;it.p.hatch=Math.max(it.p.hatch||0,.7);it.p.smooth=Math.max(it.p.smooth||0,1)}
   if(k==='font')saveUI('font',v);if(k==='size')saveUI('size',v);
   syncInsp(el);if((REVEC.has(k)||it.type==='shape')&&!el.dataset.top)schedule(it,k==='text'?350:250);else{draw();if(k==='pen'){renderItems();renderInsp()}}updInfo();commit()}
@@ -867,7 +870,8 @@ function syncInsp(except){const it=sel(),box=$('#insp');if(!it||box.style.displa
     if(el.type==='checkbox')el.checked=!!v;else if(el.dataset.t==='num'&&typeof v==='number')el.value=+(+v).toFixed(2);else el.value=(k==='mode'&&it.type==='image'&&['contour','hatch','both'].includes(v))?'cf':v});
   const sm=box.querySelector('#sysmode');if(sm)sm.style.display=(it.p.font||'').startsWith('sys:')?'':'none';
   box.querySelectorAll('[data-hatch]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both'||it.p.mode==='tone'||it.p.fill==='hatch')?'':'none');
-  box.querySelectorAll('[data-tone]').forEach(r=>r.style.display=it.p.mode==='tone'?'':'none');
+  box.querySelectorAll('[data-tone]').forEach(r=>r.style.display=(it.p.mode==='tone'||(it.p.tonal&&(it.p.mode==='hatch'||it.p.mode==='both')))?'':'none');
+  box.querySelectorAll('[data-ton]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both')?'':'none');
   box.querySelectorAll('[data-hatch2]').forEach(r=>r.style.display=(it.p.mode==='hatch'||it.p.mode==='both')?'':'none');
   box.querySelectorAll('[data-cf]').forEach(r=>r.style.display=['contour','hatch','both'].includes(it.p.mode)?'':'none');
   box.querySelectorAll('[data-edge]').forEach(r=>r.style.display=it.p.mode==='edges'?'':'none');
@@ -1315,10 +1319,10 @@ $('#mall').onclick=()=>act(async()=>{const N=MERGE.rows.length,start=MERGE.idx;
 
 /* ───── documents Word / PDF ───── */
 const DOC={on:false,tok:null,id:null,info:null,name:'',opts:null,idx:0,n:1,sig:'',blobs:new Map(),els:new Map()};
-const DOCDEF={font:'scripts',size:4,line_spacing:1.7,reflow:true,images:true,img_w:80,img_mode:'contour'};
+const DOCDEF={font:'scripts',size:4,line_spacing:1.7,reflow:true,images:true,img_w:80,img_doc:true,img_mode:'contour'};
 const IMG_MODES=[['contour','Contours (bords)'],['skeleton','Ligne centrale (traits)'],['hatch','Remplissage seul (hachures)'],['both','Contours + remplissage des noirs'],['tone','Tons de gris (hachures croisées)']];
 const docSig=()=>JSON.stringify(ITEMS.filter(i=>i.doc===DOC.tok).map(i=>[i.id,+i.cx.toFixed(2),+i.cy.toFixed(2),i.rot,i.scale,i.vis,i.pen||0,i.p]));
-const docReq=(id,o,page)=>({id,font:o.font,size:o.size,line_spacing:o.line_spacing,letter_spacing:0,gap:.6,reflow:o.reflow,breaks:o.breaks,tables:o.tables!==false,hf:o.hf!==false,images:o.images,img_w:o.img_w,rotate:o.rotate||0,margin:o.margin,paper_w:paperDims()[0],paper_h:paperDims()[1],page});
+const docReq=(id,o,page)=>({id,font:o.font,size:o.size,line_spacing:o.line_spacing,letter_spacing:0,gap:.6,reflow:o.reflow,breaks:o.breaks,tables:o.tables!==false,hf:o.hf!==false,images:o.images,img_w:o.img_w,img_doc:o.img_doc!==false,rotate:o.rotate||0,margin:o.margin,paper_w:paperDims()[0],paper_h:paperDims()[1],page});
 const docBlob=async i=>{if(!DOC.blobs.has(i))DOC.blobs.set(i,await fetch(`/api/doc/img?id=${DOC.id}&i=${i}`).then(r=>r.blob()));return DOC.blobs.get(i)};
 function docPreview(cv,L,o,id,redraw){const[pw,ph]=paperDims(),w=Math.max(200,cv.clientWidth),h=Math.round(w*ph/pw),dpr=window.devicePixelRatio||1,s=w/pw;
   cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
@@ -1347,7 +1351,9 @@ async function docDialog(j,o0,page0){
     ${j.tables?`<label class=chk><input type=checkbox id=dtables> Garder les tableaux (quadrillage et colonnes)</label>`:''}
     ${(j.header||j.footer)?`<label class=chk><input type=checkbox id=dhf> Écrire l'${j.header&&j.footer?'en-tête et le pied de page':j.header?'en-tête':'pied de page'} sur chaque feuille</label>`:''}
     ${j.images?`<label class=chk><input type=checkbox id=dimgs> Dessiner les images</label>
+      <label class=chk id=dimgdoc><input type=checkbox id=dimgd> Garder la taille des images du document</label>
       <div class=row id=dimgrow><label>Largeur images</label><input type=number id=dimgw min=10 max=300 step=5 style="width:70px"><span class=hint>mm au maximum</span></div>
+      <label class=chk id=dimgton title="Zones sombres hachurées serré, zones claires plus espacé : un seul stylo noir rend les nuances de gris. Remplace le mode ci-dessous : pas de contour autour des gris, les traits pleins fins restent des lignes."><input type=checkbox id=dimgt> Nuances de gris : hachures plus ou moins espacées</label>
       <div class=row id=dimgrow2><label>Mode images</label><select id=dimgm style="flex:1;max-width:190px">${IMG_MODES.map(([v,t])=>`<option value=${v}>${t}</option>`).join('')}</select></div>`:''}
     ${ITEMS.some(i=>i.doc!==DOC.tok)?`<label class=chk><input type=checkbox id=dclear checked> Vider la composition actuelle</label>`:''}
     <div class=hint style="margin-top:8px">Papier ${paperDims().map(v=>Math.round(v)).join(' × ')} mm (réglable dans le Composer). Les titres sont écrits plus grands, les listes avec un tiret, les tableaux avec leur quadrillage (un objet « Tableau » par feuille).</div>
@@ -1356,8 +1362,8 @@ async function docDialog(j,o0,page0){
   const pr=ask('Écrire ce document',html,'Mettre en page et ajouter','Annuler');
   const g=id=>$('#'+id);
   g('dfont').value=o.font;g('dsize').value=o.size;g('dls').value=o.line_spacing;g('dlsv').textContent=o.line_spacing;g('dmargin').value=o.margin;g('dreflow').checked=o.reflow;g('dbreaks').checked=o.breaks;g('drot').value=o.rotate||0;if(j.tables)g('dtables').checked=o.tables!==false;if(j.header||j.footer)g('dhf').checked=o.hf!==false;
-  if(j.images){g('dimgs').checked=o.images;g('dimgw').value=o.img_w;g('dimgm').value=o.img_mode}
-  const sync=()=>{if(j.images){const on=g('dimgs').checked;g('dimgrow').style.opacity=g('dimgrow2').style.opacity=on?1:.4}};sync();
+  if(j.images){g('dimgs').checked=o.images;g('dimgw').value=o.img_w;g('dimgd').checked=o.img_doc!==false;g('dimgt').checked=!!o.img_tonal;g('dimgm').value=o.img_mode}
+  const sync=()=>{if(j.images){const on=g('dimgs').checked,dd=g('dimgd').checked;g('dimgdoc').style.opacity=g('dimgton').style.opacity=g('dimgrow2').style.opacity=on?1:.4;g('dimgrow').style.opacity=on&&!dd?1:.4;g('dimgw').disabled=!on||dd}};sync();
   const paint=()=>{if(last)docPreview(g('dcv'),last,o,j.id,paint)};
   const refresh=()=>{clearTimeout(tm);tm=setTimeout(async()=>{const my=++seq;g('dmsg').textContent='Mise en page…';
     try{const L=await api('/doc/layout',docReq(j.id,o,page));if(my!==seq)return;last=L;page=L.page;npages=L.pages;
@@ -1367,7 +1373,7 @@ async function docDialog(j,o0,page0){
   const bind=(id,fn)=>{g(id).addEventListener('input',()=>{fn(g(id));sync();refresh()});g(id).addEventListener('change',()=>{fn(g(id));sync();refresh()})};
   bind('dfont',e=>o.font=e.value);bind('dsize',e=>o.size=Math.max(1.5,Math.min(30,+e.value||4)));bind('dls',e=>{o.line_spacing=+e.value;g('dlsv').textContent=e.value});
   bind('dmargin',e=>o.margin=Math.max(0,Math.min(60,+e.value||0)));bind('dreflow',e=>o.reflow=e.checked);bind('dbreaks',e=>o.breaks=e.checked);bind('drot',e=>{o.rotate=+e.value;page=0});if(j.tables)bind('dtables',e=>o.tables=e.checked);if(j.header||j.footer)bind('dhf',e=>o.hf=e.checked);
-  if(j.images){bind('dimgs',e=>o.images=e.checked);bind('dimgw',e=>o.img_w=Math.max(10,+e.value||80));bind('dimgm',e=>o.img_mode=e.value)}
+  if(j.images){bind('dimgs',e=>o.images=e.checked);bind('dimgw',e=>o.img_w=Math.max(10,+e.value||80));bind('dimgd',e=>o.img_doc=e.checked);bind('dimgt',e=>o.img_tonal=e.checked);bind('dimgm',e=>o.img_mode=e.value)}
   g('dpp').onclick=()=>{page--;refresh()};g('dpnx').onclick=()=>{page++;refresh()};
   const rs=()=>paint();window.addEventListener('resize',rs);refresh();
   const ok=await pr;window.removeEventListener('resize',rs);clearTimeout(tm);box.classList.remove('wide');
@@ -1388,7 +1394,7 @@ async function openDocument(f){
   if(res.clear){ITEMS=[];SEL=null;SELS=new Set()}
   tab('compose');await applyDocPage(res.page);
   if(DOC.n>1)toast(`${DOC.n} feuilles : navigue avec ◀ ▶ ou trace tout d’un coup.`)}
-function docPrefs(o,j){const old=(CFG.ui||{}).doc||{};saveUI('doc',{font:o.font,size:o.size,line_spacing:o.line_spacing,reflow:o.reflow,images:j.images?o.images:old.images,img_w:o.img_w,img_mode:o.img_mode,margin:o.margin})}
+function docPrefs(o,j){const old=(CFG.ui||{}).doc||{};saveUI('doc',{font:o.font,size:o.size,line_spacing:o.line_spacing,reflow:o.reflow,images:j.images?o.images:old.images,img_w:o.img_w,img_doc:o.img_doc!==false,img_tonal:!!o.img_tonal,img_mode:o.img_mode,margin:o.margin})}
 function docRelease(){ITEMS.forEach(i=>{if(i.doc===DOC.tok)delete i.doc});DOC.on=false;$('#docbar').style.display='none'}
 async function applyDocPage(idx){
   const L=await api('/doc/layout',docReq(DOC.id,DOC.opts,idx));DOC.idx=L.page;DOC.n=L.pages;
@@ -1397,7 +1403,7 @@ async function applyDocPage(idx){
     if(e.kind==='text'){const it=newItem('text',{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0,name:e.text.split('\n')[0].slice(0,26),
         p:{text:e.text,font:e.font,size:e.size,line_spacing:DOC.opts.line_spacing,letter_spacing:0,align:'left',slant:0,jitter:0,max_width:L.max_width,seed:1,trace:'skeleton',word_spacing:0,wobble:0,smooth:0}},true);jobs.push(vectorize(it))}
     else if(e.kind==='shape'){const it=newItem('shape',{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0,name:e.name,p:{inline:e.paths}},true);jobs.push(vectorize(it))}
-    else jobs.push((async()=>{const it=await makeImageItem(await docBlob(e.i),`Image ${e.i+1}`,{width:e.w,mode:DOC.opts.img_mode,quiet:true,extra:{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0}});await vectorize(it)})())}
+    else jobs.push((async()=>{const it=await makeImageItem(await docBlob(e.i),`Image ${e.i+1}`,{width:e.w,mode:DOC.opts.img_tonal?'hatch':DOC.opts.img_mode,tonal:!!DOC.opts.img_tonal,quiet:true,extra:{doc:DOC.tok,cx:e.cx,cy:e.cy,rot:e.rot||0}});await vectorize(it)})())}
   await Promise.all(jobs);
   const mine=ITEMS.filter(i=>i.doc===DOC.tok).sort((a,b)=>a.cy-b.cy||a.cx-b.cx);ITEMS=[...ITEMS.filter(i=>i.doc!==DOC.tok),...mine];   // ordre de lecture = ordre de tracé
   renderItems();renderInsp();draw();updInfo();commit(true);DOC.sig=docSig();
